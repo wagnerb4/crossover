@@ -118,14 +118,37 @@ public class View {
 		return false;
 	}
 	
+	/**
+	 * @return Returns a copy of this view containing separate Maps and a 
+	 * separate {@link Graph} but the same {@link Node} and {@link Edge} objects.
+	 */
 	public View copy() {
-		return null;
+		
+		View copyOfView = new View(resource);
+		
+		Graph copyOfGraph = new GraphImpl(graph.getName());
+		copyOfGraph.getNodes().addAll(graph.getNodes());
+		copyOfGraph.getEdges().addAll(graph.getEdges());
+		copyOfView.graph = copyOfGraph;
+		
+		copyOfView.graphMap.putAll(graphMap);
+		
+		copyOfView.objectMap.putAll(objectMap);
+		
+		return copyOfView;
+		
 	}
 	
+	/**
+	 * Changes this {@link View} to be empty.
+	 */
 	public void clear() {
+		
 		graph.getEdges().forEach(graph::removeEdge);
 		graph.getNodes().forEach(graph::removeNode);
 		graphMap.clear();
+		objectMap.clear();
+		
 	}
 	
 	public void union(View view) {
@@ -152,28 +175,32 @@ public class View {
 		
 	}
 	
+	/**
+	 * Reduces the view by any elements not part of the given {@code metamodel} and extends it by all that are.
+	 * @param metamodel the meta-model or sub-meta-model of the {@code resource}
+	 * @return Returns {@code true} if the {@link Resource} is a valid meta-model and {@code false} otherwise.
+	 */
 	public boolean matchViewByMetamodel(Resource metamodel) {
+		
 		clear();
 		EList<EObject> contets = metamodel.getContents();
 		
 		if (!contets.isEmpty()) {
 			
 			if (contets.get(0) instanceof EPackage) {
+				
 				EPackage ePackage = (EPackage) contets.get(0);
 				EList<EClassifier> classifiers = ePackage.getEClassifiers();
-				boolean allClassifiersAreEClasses = classifiers.stream().allMatch(classifier -> classifier instanceof EClass);
 				
-				if (allClassifiersAreEClasses) {
-					classifiers.forEach(classifier -> {
-						EClass eClass = (EClass) classifier;
-						extend(eClass);
-						eClass.getEReferences().forEach(this::extend);
-					});
-					
-					return true;
-				} else {
-					return false;
+				for (EClassifier eClassifier : classifiers) {
+					if (classifiers instanceof EClass) {
+						extend(eClassifier);
+						((EClass) eClassifier).getEReferences().forEach(this::extend);
+					}
 				}
+				
+				return true;
+	
 			} else {
 				return false;
 			}
