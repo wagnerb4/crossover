@@ -2,8 +2,10 @@ package view;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.TreeIterator;
@@ -38,12 +40,25 @@ public class View {
 	
 	/**
 	 * The {@link Graph} used to reflect the elements from the {@link View#resource resource} and their structure.
+	 * All {@link Node nodes} and {@link Edge edges} in this graph are considered to be part of the {@link View}.
 	 * Reflected elements may be {@link EObject EObjects} and references between them. The mapping between this graph and
 	 * the {@link View#resource resource} is recorded in the {@link View#graphMap graphMap} and the {@link View#objectMap objectMap}.
 	 */
 	Graph graph;
 	
+	/**
+	 * The map used to record the association from a given {@link EObject} to one specific {@link Node}.
+	 * The {@link View#objectMap objectMap} should always be the exact inverse mapping of this map. </br>
+	 * All {@link EObject EObjects} from the {@link View#resource resource} that are not part of this map's keyset are not part of this {@link View},
+	 * however not all {@link EObject EObjects} from this map's keyset are necessarily part of this view (e.g are part of the {@link View#graph graph})
+	 * as they may be part of <b>dangling</b> {@link Edge edges}.
+	 */
 	Map<EObject, Node> graphMap;
+	
+	/**
+	 * The map used to record the association from a given {@link Node} to one specific {@link EObject}.
+	 * The {@link View#graphMap graphMap} should always be the exact inverse mapping of this map.
+	 */
 	Map<Node, EObject> objectMap;
 	
 	/**
@@ -171,20 +186,18 @@ public class View {
 	
 	
 	/**
-	 * Extends the {@link View} by the given {@code eReference}-feature of the {@code eObject}.
+	 * Extends the {@link View} by the given {@code eReference}-feature of the {@code eObject}. 
+	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
 	 * @param eObject the {@link EObject} {@link EObject#eGet(org.eclipse.emf.ecore.EStructuralFeature) associated with} the {@code eReference}
 	 * @param eReference the {@link EReference} to extend the {@link View} by
-	 * @return Returns {@code false} if the {@code eObject} is not part of the {@link View#resource resource} <b>or</b> not already part of the {@link View}
-	 * <b>or</b> the given {@code eReference} is not {@link EObject#eGet(org.eclipse.emf.ecore.EStructuralFeature) associated with} the {@code eObject} 
-	 * <b>or</b> the referenced {@link EObject} is not already part of the {@link View}. Returns {@code true} if a new {@link Edge} has been added to the {@link View#graph graph}.
+	 * @return Returns {@code false} if the {@code eObject} is not part of the {@link View#resource resource}
+	 * <b>or</b> the given {@code eReference} is not {@link EObject#eGet(org.eclipse.emf.ecore.EStructuralFeature) associated with} the {@code eObject}.
+	 * Returns {@code true} if a new {@link Edge} has been added to the {@link View#graph graph}.
 	 */
 	public boolean extend(EObject eObject, EReference eReference) {
 		// check if the eObject is contained in the resource
 		String uriFragment = resource.getURIFragment(eObject);
 		if (uriFragment == null || uriFragment.isEmpty() || uriFragment.equals("/-1")) return false;
-		
-		// check if the eObject is already part of the view
-		if (!graphMap.containsKey(eObject)) return false;
 		
 		try {
 			Object object = eObject.eGet(eReference);
@@ -192,11 +205,32 @@ public class View {
 			if(object instanceof EObject) {
 				EObject referencedEObject = (EObject) object;
 				
-				if(!graphMap.containsKey(referencedEObject)) return false;
+				Node sourceNode, targetNode;
 				
-				Edge edge = new EdgeImpl(graphMap.get(eObject), graphMap.get(referencedEObject), eReference);
+				if (graphMap.containsKey(eObject)) {
+					sourceNode = graphMap.get(eObject);
+				} else {
+					// create a new node but don't add it to the graph
+					sourceNode = new NodeImpl();
+					sourceNode.setGraph(graph);
+					sourceNode.setType(eObject.eClass());
+					graphMap.put(eObject, sourceNode);
+					objectMap.put(sourceNode, eObject);
+				}
+				
+				if(graphMap.containsKey(referencedEObject)) {
+					targetNode = graphMap.get(referencedEObject);
+				} else {
+					// create a new node but don't add it to the graph
+					targetNode = new NodeImpl();
+					targetNode.setGraph(graph);
+					targetNode.setType(referencedEObject.eClass());
+					graphMap.put(referencedEObject, targetNode);
+					objectMap.put(targetNode, referencedEObject);
+				}
+				
+				Edge edge = new EdgeImpl(sourceNode, targetNode, eReference);
 				edge.setGraph(graph);
-				
 				graph.getEdges().add(edge);
 				
 				return true;
@@ -249,18 +283,18 @@ public class View {
 	
 	/**
 	 * Removes the given {@link EObject} from the {@link View}.
+	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
 	 * @param eObject the {@link EObject} to remove
 	 * @return Returns {@code true} if the {@link EObject} has been removed successfully and 
-	 * {@code false} if the {@link EObject} is not part of the {@link View} <b>or</b> there are still {@link #Edge Edges} connected to the {@link Node}.
+	 * {@code false} if the {@link EObject} is not part of the {@link View}.
 	 */
 	public boolean reduce(EObject eObject) {
 		// check if the eObject is part of the view
 		if(!graphMap.containsKey(eObject)) return false;
 		
-		// check if there are still edges connected to this node
-		if(graphMap.get(eObject).getOutgoing().size() > 0 || graphMap.get(eObject).getIncoming().size() > 0) return false;
+		// I don't use the graph.removeNode method, as it automatically removes all of the attached edges
+		graph.getNodes().remove(graphMap.get(eObject));
 		
-		if(!graph.removeNode(graphMap.get(eObject))) return false;
 		objectMap.remove(graphMap.get(eObject));
 		graphMap.remove(eObject);
 		return true;
@@ -271,7 +305,7 @@ public class View {
 	 * Removes an instance of the given {@link EReference} from the {@link View}.
 	 * @param eObject the {@link EObject} the {@link EReference} is {@link EObject#eGet(org.eclipse.emf.ecore.EStructuralFeature) associated with}
 	 * @param eReference the {@link Edge#getType() type} of {@link Edge} to be removed
-	 * @return Returns {@code true} if the specified {@link Edges} has been removed successfully.
+	 * @return Returns {@code true} if the specified {@link Edges} has been found and removed successfully.
 	 * Returns {@code false} if the {@code eObject} is not part of the view <b>or</b> the specified {@link Node} doesn't have an {@link Edge} of the correct {@link Edge#getType() type}.
 	 */
 	public boolean reduce(EObject eObject, EReference eReference) {
@@ -279,15 +313,17 @@ public class View {
 		List<Edge> edges = graphMap.get(eObject).getAllEdges();
 		if(edges.isEmpty()) return false;
 		
-		boolean removedEdge = false;
+		boolean foundEdge = false;
+		boolean removedEdge = true;
 		
 		for (Edge edge : edges ) {
 			if (edge.getType().equals(eReference)) {
-				removedEdge |= graph.removeEdge(edge);
+				foundEdge = true;
+				removedEdge &= graph.removeEdge(edge);
 			}
 		}
 		
-		return removedEdge;
+		return foundEdge & removedEdge;
 	}
 	
 	
@@ -326,20 +362,169 @@ public class View {
 	}
 	
 	
-	public void union(View view) {
+	/**
+	 * Calculates the union of this and the given {@link View}, altering this {@link View} in the process.
+	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
+	 * @param view the {@link View} to unite with (it is required to have the same {@link View#resource resource} as this {@link View})
+	 * @return Returns {@code true} if the union has been done successfully and {@code false} otherwise.
+	 */
+	public boolean union(View view) {
+		if (resource != view.resource) return false;
 		
+		// add nodes
+		Iterator<EObject> keySetIterator = view.graphMap.keySet().iterator();
+		boolean addingSuccessfull = true;
+		
+		while (keySetIterator.hasNext()) {
+			EObject eObject = (EObject) keySetIterator.next();
+			if (!graphMap.containsKey(eObject)) {
+				addingSuccessfull &= extend(eObject);
+			}
+		}
+		
+		if (!addingSuccessfull) return false;
+		
+		// add edges
+		List<Edge> edges = view.graph.getEdges();
+		
+		for (Edge edge : edges) {
+			EObject sourceEObject = view.objectMap.get(edge.getSource());
+			EObject targetEObject = view.objectMap.get(edge.getTarget());
+			
+			boolean graphContainsEdge = false;
+			Edge foundEdge = graphMap.get(sourceEObject).getOutgoing(edge.getType(), graphMap.get(targetEObject));
+			
+			if (foundEdge != null) {
+				graphContainsEdge = true;
+			} else {
+				// check the other direction as we don't want the graph to be directed
+				foundEdge = graphMap.get(sourceEObject).getIncoming(edge.getType(), graphMap.get(targetEObject));
+				graphContainsEdge = foundEdge != null;
+			}
+			 
+			if (!graphContainsEdge) {
+				if(sourceEObject.eClass().getEAllStructuralFeatures().contains(edge.getType()) && 
+						sourceEObject.eGet(edge.getType()).equals(targetEObject) && 
+						!extend(sourceEObject, edge.getType())) {
+					return false;
+				} else if (targetEObject.eClass().getEAllStructuralFeatures().contains(edge.getType()) && 
+						targetEObject.eGet(edge.getType()).equals(sourceEObject) && 
+						!extend(targetEObject, edge.getType())) {
+					return false;
+				} else {
+					return false;
+				}
+			}
+			
+		}
+		
+		return true;
 	}
 	
-	
-	public void intersect(View view) {
+	/**
+	 * Calculates the intersection of this and the given {@link View}, altering this {@link View} in the process.
+	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
+	 * @param view the {@link View} to intersect with (it is required to have the same {@link View#resource resource} as this {@link View})
+	 * @return Returns {@code true} if the intersection has been done successfully and {@code false} otherwise.
+	 */
+	public boolean intersect(View view) {
+		if (resource != view.resource) return false;
 		
+		// remove all edges that are not part of the given view
+		List<Edge> edges = graph.getEdges();
+		
+		for (Edge edge : edges) {
+			
+			// find out if the given view contains the edge
+			
+			boolean graphContainsEdge = false;
+			Edge foundEdge = null;
+			
+			EObject sourceEObject = objectMap.get(edge.getSource());
+			EObject targetEObject = objectMap.get(edge.getTarget());
+			
+			if (view.graphMap.containsKey(sourceEObject) && view.graphMap.containsKey(targetEObject)) {
+				foundEdge = view.graphMap.get(sourceEObject).getOutgoing(edge.getType(), view.graphMap.get(targetEObject));
+				
+				if (foundEdge != null) {
+					graphContainsEdge = true;
+				} else {
+					// check the other direction as we don't want the graph to be directed
+					foundEdge = view.graphMap.get(sourceEObject).getIncoming(edge.getType(), view.graphMap.get(targetEObject));
+					graphContainsEdge = foundEdge != null;
+				}
+			} else {
+				// maybe we are looking for a dangling edge
+				List<Edge> edgeCandidates = view.graph.getEdges().stream().filter(edgeCandidate -> {
+					EObject foundSourceEObject = view.objectMap.get(edgeCandidate.getSource());
+					EObject foundTargetEObject = view.objectMap.get(edgeCandidate.getTarget());
+					return foundSourceEObject == sourceEObject && targetEObject == foundTargetEObject;
+				}).collect(Collectors.toList());
+				
+				if (edgeCandidates.isEmpty()) {
+					graphContainsEdge = false;
+				} else if (edgeCandidates.size() == 1) {
+					graphContainsEdge = true;
+					foundEdge = edgeCandidates.get(0);
+				} else {
+					return false;
+				}
+			}
+			 
+			// remove the edge form this view if necessary
+			
+			if (!graphContainsEdge) {
+				boolean removedAny = false;
+				
+				if(sourceEObject.eClass().getEAllStructuralFeatures().contains(edge.getType()) && 
+						sourceEObject.eGet(edge.getType()).equals(targetEObject)) {
+					removedAny = true;
+					if(!reduce(sourceEObject, edge.getType())) return false;
+				}
+				
+				if (targetEObject.eClass().getEAllStructuralFeatures().contains(edge.getType()) && 
+						targetEObject.eGet(edge.getType()).equals(sourceEObject)) {
+					removedAny = true;
+					if(!reduce(targetEObject, edge.getType())) return false;
+				}
+				
+				if(!removedAny) return false;
+			}
+			
+		}
+		
+		// remove all nodes that are not part of the given view
+		Iterator<EObject> keySetIterator = graphMap.keySet().iterator();
+		boolean removalSuccessfull = true;
+		
+		while (keySetIterator.hasNext()) {
+			EObject eObject = (EObject) keySetIterator.next();
+			if (!view.graphMap.containsKey(eObject)) {
+				removalSuccessfull &= reduce(eObject);
+			}
+		}
+		
+		if(!removalSuccessfull) return false;
+		
+		return true;
 	}
 	
-	
-	public void substract(View view) {
-		
+	/**
+	 * Calculates the difference of this and the given {@link View}, altering this {@link View} in the process.
+	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
+	 * @param view the {@link View} to subtract (it is required to have the same {@link View#resource resource} as this {@link View})
+	 * @return Returns {@code true} if the given {@link View} has been subtracted successfully and {@code false} otherwise.
+	 */
+	public boolean subtract(View view) {
+		return false;
 	}
 	
+	/*
+	 * TODO:
+	 * - intersect, union und subtract anpassen, sodass sie mit dangling edges klarkommen
+	 * - Methoden schreiben, welche überprüfen, ob Knoten bzw. Kanten teil der View sind
+	 * - verwendung von graphMap und objectMap hinsichtlich der dangling edges überarbeiten
+	 */
 	
 	public void removeDangling() {
 		
