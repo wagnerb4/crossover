@@ -33,7 +33,10 @@ import org.eclipse.emf.henshin.model.impl.NodeImpl;
 public class View {
 	
 	/**
-	 * The {@link Resource} this {@link View} should reflect. 
+	 * The {@link Resource} this {@link View} should reflect.
+	 * @implNote Only {@link Resource resources} with one root element are supported.
+	 * The use of mulit-root {@link Resource resources} may result in unforeseen consequences.
+	 * @see View#graph
 	 */
 	final Resource resource;
 	
@@ -72,14 +75,12 @@ public class View {
 		graph = new GraphImpl();
 	}
 
-	
 	/**
 	 * @return Returns the {@link View#resource resource}.
 	 */
 	Resource getResource() {
 		return resource;
 	}
-	
 	
 	/**
 	 * @param eObject an {@link EObject} form the {@link View#resource resource}
@@ -88,7 +89,6 @@ public class View {
 	public Node getNode(EObject eObject) {
 		return contains(eObject) ? graphMap.get(eObject) : null;
 	}
-	
 	
 	/**
 	 * @return Returns a random {@link Node} form the {@link View#graph graph} or {@code null} if the {@link View#graph graph} is empty.
@@ -103,7 +103,6 @@ public class View {
 		}
 	}
 	
-	
 	/**
 	 * @param node an {@link Node} from the {@link View#graph graph}
 	 * @return Returns the {@link EObject} mapped to the given {@link Node} or {@code null} if the {@link Node} is not part of the {@link View Views} {@link View#graph graph}.
@@ -112,14 +111,12 @@ public class View {
 		return contains(node) ? objectMap.get(node) : null;
 	}
 	
-	
 	/**
 	 * @return Returns {@code true} if the {@link View} represents no elements from its {@link View#resource resource}, {@code false} otherwise.
 	 */
 	public boolean isEmpty() {
 		return graph.getNodes().isEmpty() && graph.getEdges().isEmpty();
 	}
-	
 	
 	/**
 	 * Extends the {@link View} by all {@link EObject EObjects} in the {@link View#resource resource} of the given {@link EObject#eClass() type} using the {@link View#extend(EClass)} method.
@@ -143,7 +140,6 @@ public class View {
 		return foundMatch & addedSuccessfull;	
 		
 	}
-	
 	
 	/**
 	 * Extends the {@link View} by all instances of the {@code eReference} in the {@link View#resource resource} using the {@link View#extend(EObject, EObject, EReference)} method.
@@ -178,7 +174,6 @@ public class View {
 		return foundMatch;
 	}
 	
-	
 	/**
 	 * Extends the {@link View} by the given {@code eObject}.
 	 * @param eObject the {@link EObject} to add to the {@link View}
@@ -202,7 +197,6 @@ public class View {
 		
 		return true;
 	}
-	
 	
 	/**
 	 * Extends the {@link View} by the {@link Edge edge} specified by the given parameters. 
@@ -284,7 +278,6 @@ public class View {
 
 	}
 	
-	
 	/**
 	 * Removes all {@link EObject EObjects} with the given {@link EObject#eClass() type} from the {@link View} using the {@link View#reduce(EObject)} method.
 	 * @param eClass the {@link EObject#eClass() type} of {@link EObject EObjects} to remove
@@ -305,7 +298,6 @@ public class View {
 		
 		return foundMatch & removedSuccessfully;	
 	}
-	
 	
 	/**
 	 * Removes all instances of the {@code eReference} in the {@link View#resource resource} from the {@link View} using the {@link View#reduce(EObject, EObject, EReference)} method.
@@ -340,7 +332,6 @@ public class View {
 		return foundMatch;
 	}
 	
-	
 	/**
 	 * Removes the given {@link EObject} from the {@link View}.
 	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
@@ -359,7 +350,6 @@ public class View {
 		graphMap.remove(eObject);
 		return true;
 	}
-	
 	
 	/**
 	 * Removes an instance of the given {@link EReference} from the {@link View}.
@@ -421,7 +411,6 @@ public class View {
 		return foundEdge & removedEdge;
 	}
 	
-	
 	/**
 	 * @return Returns a copy of this {@link View} containing separate Maps and a 
 	 * separate {@link View#graph graph} but the same {@link Node Nodes} and {@link Edge Edges}.
@@ -443,7 +432,6 @@ public class View {
 		
 	}
 	
-	
 	/**
 	 * Changes this {@link View} to be empty.
 	 */
@@ -456,7 +444,6 @@ public class View {
 		
 	}
 	
-	
 	/**
 	 * Calculates the union of this and the given {@link View}, altering this {@link View} in the process.
 	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
@@ -464,6 +451,7 @@ public class View {
 	 * @throws ViewSetOperationException If the union has not been successful and the current {@link View} is in an uncertain state.
 	 */
 	public void union(View view) throws ViewSetOperationException {
+		
 		View savedState = copy();
 		
 		if (resource != view.resource) throw new ViewSetOperationException("The resources are not identical.", savedState);
@@ -505,6 +493,7 @@ public class View {
 			}
 			
 		}
+		
 	}
 	
 	/**
@@ -514,6 +503,7 @@ public class View {
 	 * @throws ViewSetOperationException If the intersection has not been successful and the current {@link View} is in an uncertain state.
 	 */
 	public void intersect(View view) throws ViewSetOperationException {
+		
 		View savedState = copy();
 		
 		if (resource != view.resource) throw new ViewSetOperationException("The resources aren't identical.", savedState);
@@ -557,6 +547,7 @@ public class View {
 				if(!reduce(eObject)) throw new ViewSetOperationException("Cannot remove a node.", savedState);
 			}
 		}
+		
 	}
 	
 	/**
@@ -566,17 +557,114 @@ public class View {
 	 * @throws ViewSetOperationException If the subtraction has not been successful and the current {@link View} is in an uncertain state.
 	 */
 	public void subtract(View view) throws ViewSetOperationException {
+		
+		View savedState = copy();
+		
+		if (resource != view.resource) throw new ViewSetOperationException("The resources aren't identical.", savedState);
+		
+		// remove all edges contained in the given view that are part of this view from this view
+		List<Edge> edges = view.graph.getEdges();
+		
+		for (Edge edge : edges) {
+			
+			// find out if this view contains the edge
+			EObject sourceEObject = view.objectMap.get(edge.getSource());
+			EObject targetEObject = view.objectMap.get(edge.getTarget());
+			boolean graphContainsEdge = contains(sourceEObject, targetEObject, edge.getType(), true);
+			
+			if(graphContainsEdge) {
+				// remove the edge form this view
+				boolean removedAny = false;
+				
+				if(sourceEObject.eClass().getEAllReferences().contains(edge.getType()) && 
+						sourceEObject.eGet(edge.getType()).equals(targetEObject)) {
+					removedAny = true;
+					if(!reduce(sourceEObject, targetEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
+				}
+				
+				if (targetEObject.eClass().getEAllReferences().contains(edge.getType()) && 
+						targetEObject.eGet(edge.getType()).equals(sourceEObject)) {
+					removedAny = true;
+					if(!reduce(targetEObject, sourceEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
+				}
+				
+				if(!removedAny) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
+			}
+			
+		}
+		
+		// remove all nodes contained in the given view that are part of this view from this view
+		List<EObject> eObjects = view.graph.getNodes().stream().map(view.objectMap::get).collect(Collectors.toList());
+		
+		for (EObject eObject : eObjects) {
+			if(contains(eObject)) {
+				if(!reduce(eObject)) throw new ViewSetOperationException("Cannot remove a node.", savedState);
+			}
+		}
+		
 	}
 	
+	/**
+	 * Removes all dangling {@link Edge edges}. An {@link Edge edge} is considered to be dangling if it
+	 * is part of the {@link View} but either (or both) of the {@link Edge edge's} {@link Node nodes} are not.
+	 */
 	public void removeDangling() {
 		
+		for (Edge edge : graph.getEdges()) {
+			boolean edgeIsDangling = !graph.getNodes().contains(edge.getSource()) || !graph.getNodes().contains(edge.getTarget());
+			if (edgeIsDangling) {
+				graph.removeEdge(edge);
+			}
+		}
+		
 	}
 	
+	/**
+	 * Makes all dangling {@link Edge edges} '<i>real</i>' by adding their {@link Node nodes} to the {@link View#graph graph}.
+	 * An {@link Edge edge} is considered to be dangling if it is part of the {@link View} but either (or both) of the 
+	 * {@link Edge edge's} {@link Node nodes} are not.
+	 */
 	public void completeDangling() {
+		
+		for (Edge edge : graph.getEdges()) {
+			boolean edgeIsDangling = !graph.getNodes().contains(edge.getSource()) || !graph.getNodes().contains(edge.getTarget());
+			if (edgeIsDangling) {
+				if(!graph.getNodes().contains(edge.getSource()))
+					graph.getNodes().add(edge.getSource());
+				if(!graph.getNodes().contains(edge.getTarget()))
+					graph.getNodes().add(edge.getTarget());
+			}
+		}
 		
 	}
 		
+	/**
+	 * Adds all {@link Edge edges} to the {@link View} that exist the {@link View#resource resource} and do not result in dangling {@link Edge edges}.
+	 */
 	public void extendByMissingEdges() {
+		
+		TreeIterator<EObject> treeIterator = resource.getAllContents();
+		
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			List<EReference> eReferences = eObject.eClass().getEAllReferences();
+			
+			for (EReference eReference : eReferences) {
+				Object object = eObject.eGet(eReference);
+				
+				if(object instanceof EObject) {
+					extend(eObject, ((EObject) object), eReference);
+				} else if (object != null) {
+					@SuppressWarnings("unchecked") // see EObject#eGet(EStructuralFeature)
+					EList<EObject> eListOfEObjects = (EList<EObject>) object;
+					
+					for (EObject referencedEObject : eListOfEObjects) {
+						extend(eObject, referencedEObject, eReference);
+					}
+				}
+			}
+			
+		}
 		
 	}
 		
@@ -664,4 +752,5 @@ public class View {
 		if (edge == null) return false;
 		return contains(edge, isDangling);
 	}
+
 }
