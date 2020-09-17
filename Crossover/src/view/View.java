@@ -252,7 +252,6 @@ public class View {
 		} else {
 			// create a new node but don't add it to the graph as we want to create a dangling edge
 			sourceNode = new NodeImpl();
-			sourceNode.setGraph(graph);
 			sourceNode.setType(eObject.eClass());
 			graphMap.put(eObject, sourceNode);
 			objectMap.put(sourceNode, eObject);
@@ -264,7 +263,6 @@ public class View {
 		} else {
 			// create a new node but don't add it to the graph as we want to create a dangling edge
 			targetNode = new NodeImpl();
-			targetNode.setGraph(graph);
 			targetNode.setType(referencedEObject.eClass());
 			graphMap.put(referencedEObject, targetNode);
 			objectMap.put(targetNode, referencedEObject);
