@@ -6,6 +6,7 @@ package view;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -25,6 +26,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.henshin.model.Edge;
 import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.impl.NodeImpl;
 import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
@@ -269,7 +271,102 @@ class ViewTest {
 	 */
 	@Test
 	final void testExtendEReference() {
-		fail("Not yet implemented"); // TODO
+		
+		EReference someEReferenceNotPartOfTheScrumPlanningMetamodel = (new NodeImpl()).eClass().getEAllReferences().get(0);
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(someEReferenceNotPartOfTheScrumPlanningMetamodel));
+		
+		// the view should still be empty
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+	
+		
+		// get the expected nodes and edges
+		TreeIterator<EObject> treeIterator = SCRUM_PLANNIG_ECORE.getAllContents();
+		EObject backlog = null;
+		Set<EObject> workitemsSet = new HashSet<>();
+		treeIterator = SCRUM_PLANNIG_INSTANCE_ONE.getAllContents();
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			switch (eObject.eClass().getName()) {
+				case "Backlog":
+					backlog = eObject;
+					break;
+				case "WorkItem":
+					workitemsSet.add(eObject);
+					break;
+			}
+			
+		}
+		
+		assertNotNull(backlog);
+		assertNotEquals(0, workitemsSet.size());
+		
+		// get the workitems EReference from the metamodel
+		// it needs to be fetched using the backlog as the name workitems is not an unique identifier
+		EReference workitems = null;
+		for (EReference eReference : backlog.eClass().getEAllReferences()) {
+			if (eReference.getName().equals("workitems")) {
+				workitems = eReference;
+			}
+		}
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(workitems));
+		assertEquals(0, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		
+		// test nodes
+		
+		Set<EObject> allExpectedEObjects = new HashSet<>(workitemsSet);
+		allExpectedEObjects.add(backlog);
+		
+		Set<EObject> actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		Set<EObject> actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		assertEquals(4, viewOnScrumPlanningInstanceOne.graph.getEdges().size());
+		Set<EObject> actualWorkitems = new HashSet<>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(workitems, edge.getType());
+			assertEquals(backlog, viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualWorkitems.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(workitemsSet, actualWorkitems);
+		
+		// clear view and test with existent node
+		viewOnScrumPlanningInstanceOne.clear();
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
+		assertNotNull(viewOnScrumPlanningInstanceOne.getNode(backlog));
+		
+		// extend by workitems
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(workitems));
+		
+		// test nodes
+		assertEquals(1, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		assertEquals(backlog, viewOnScrumPlanningInstanceOne.getObject(viewOnScrumPlanningInstanceOne.graph.getNodes().get(0)));
+		
+		actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		assertEquals(4, viewOnScrumPlanningInstanceOne.graph.getEdges().size());
+		actualWorkitems = new HashSet<>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(workitems, edge.getType());
+			assertEquals(backlog, viewOnScrumPlanningInstanceOne.getObject(edge.getSource()));
+			actualWorkitems.add(viewOnScrumPlanningInstanceOne.getObject(edge.getTarget()));
+		}
+		
 	}
 
 	/**

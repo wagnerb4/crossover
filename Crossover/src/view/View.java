@@ -435,8 +435,8 @@ public class View {
 	 */
 	public void clear() {
 		
-		graph.getEdges().forEach(graph::removeEdge);
-		graph.getNodes().forEach(graph::removeNode);
+		graph.getEdges().clear();
+		graph.getNodes().clear();
 		graphMap.clear();
 		objectMap.clear();
 		
