@@ -41,6 +41,8 @@ class ViewTest {
 	private static Resource SCRUM_PLANNIG_ECORE;
 	private static Resource SCRUM_PLANNIG_INSTANCE_ONE;
 	private static Resource SCRUM_PLANNIG_INSTANCE_TWO;
+	private static Resource CRA_ECORE;
+	private static Resource CRA_INSTANCE_ONE;
 	
 	private View viewOnScrumPlanningInstanceOne;
 
@@ -53,6 +55,8 @@ class ViewTest {
 		SCRUM_PLANNIG_ECORE = resourceSet.getResource("scrumPlanning.ecore");
 		SCRUM_PLANNIG_INSTANCE_ONE = resourceSet.getResource("scrumPlanningInstanceOne.xmi");
 		SCRUM_PLANNIG_INSTANCE_TWO = resourceSet.getResource("scrumPlanningInstanceTwo.xmi");
+		CRA_ECORE = resourceSet.getResource("CRA.ecore");
+		CRA_INSTANCE_ONE = resourceSet.getResource("CRAInstanceOne.xmi");
 	}
 
 	/**
@@ -374,8 +378,74 @@ class ViewTest {
 	 */
 	@Test
 	final void testExtendEObject() {
-		assertFalse(viewOnScrumPlanningInstanceOne.extend(SCRUM_PLANNIG_INSTANCE_TWO.getContents().get(0)));
-		fail("Not yet implemented"); // TODO
+		
+		EObject someEObjectNotPartOfTheScrumPlanningMetamodel = SCRUM_PLANNIG_INSTANCE_TWO.getContents().get(0);
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(someEObjectNotPartOfTheScrumPlanningMetamodel));
+		
+		// the view should still be empty
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		
+		// get the Stakeholder and Backlog EObjects from the model
+		EObject backlog = null;
+		Set<EObject> stakeholder = new HashSet<>();
+		TreeIterator<EObject> treeIterator = SCRUM_PLANNIG_INSTANCE_ONE.getAllContents();
+		
+		while (treeIterator.hasNext()) {
+			
+			EObject eObject = (EObject) treeIterator.next();
+			
+			if (eObject.eClass().getName().equals("Stakeholder")) {
+				stakeholder.add(eObject);
+			} else if (eObject.eClass().getName().equals("Backlog")) {
+				backlog = eObject;
+			}
+			
+		}
+		
+		assertEquals(2, stakeholder.size());
+		assertNotNull(backlog);
+		
+		// extend the view
+		stakeholder.forEach(eObject -> assertTrue(viewOnScrumPlanningInstanceOne.extend(eObject)));
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
+		
+		// test the correctness
+		List<Node> nodes = viewOnScrumPlanningInstanceOne.graph.getNodes();
+		
+		assertEquals(3, nodes.size());
+		
+		Set<EObject> actualStakeholderEObjects = nodes.stream().
+				filter(node -> node.getType().getName().equals("Stakeholder")).
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet());
+		
+		Set<EObject> actualBacklogEObjects = nodes.stream().
+				filter(node -> node.getType().getName().equals("Backlog")).
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet());
+		
+		assertEquals(stakeholder, actualStakeholderEObjects);
+		assertEquals(1, actualBacklogEObjects.size());
+		assertEquals(backlog, actualBacklogEObjects.iterator().next());
+		
+		// try to add the same EObjects again
+		stakeholder.forEach(eObject -> assertFalse(viewOnScrumPlanningInstanceOne.extend(eObject)));
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(backlog));
+		
+		Set<EObject> actualStakeholderEObjectsTwo = nodes.stream().
+				filter(node -> node.getType().getName().equals("Stakeholder")).
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet());
+		
+		Set<EObject> actualBacklogEObjectsTwo = nodes.stream().
+				filter(node -> node.getType().getName().equals("Backlog")).
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet());
+		
+		// nothing should have changes
+		assertEquals(actualBacklogEObjectsTwo, actualBacklogEObjects);
+		assertEquals(actualStakeholderEObjectsTwo, actualStakeholderEObjects);
+		
 	}
 
 	/**
