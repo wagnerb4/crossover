@@ -279,7 +279,7 @@ public class View {
 	/**
 	 * Removes all {@link EObject EObjects} with the given {@link EObject#eClass() type} from the {@link View} using the {@link View#reduce(EObject)} method.
 	 * @param eClass the {@link EObject#eClass() type} of {@link EObject EObjects} to remove
-	 * @return Returns {@code true} if at least one match has been found and all found matcher have been removed successfully, {@code false} otherwise.
+	 * @return Returns {@code true} if at least one match has been found and all found matches have been removed successfully, {@code false} otherwise.
 	 */
 	public boolean reduce(EClass eClass) {
 		TreeIterator<EObject> iterator = resource.getAllContents();
@@ -338,14 +338,20 @@ public class View {
 	 * {@code false} if the {@link EObject} is not part of the {@link View}.
 	 */
 	public boolean reduce(EObject eObject) {
+		
 		// check if the eObject is part of the view
 		if(!contains(eObject)) return false;
 		
 		// I don't use the graph.removeNode method, as it automatically removes all of the attached edges
 		graph.getNodes().remove(graphMap.get(eObject));
 		
-		objectMap.remove(graphMap.get(eObject));
-		graphMap.remove(eObject);
+		// Only remove the eObject from the maps if no edge needs it
+		boolean existsEdgeWithEObject = graph.getEdges().stream().anyMatch(edge -> objectMap.get(edge.getSource()) == eObject || objectMap.get(edge.getTarget()) == eObject);
+		if(!existsEdgeWithEObject) {
+			objectMap.remove(graphMap.get(eObject));
+			graphMap.remove(eObject);
+		}
+		
 		return true;
 	}
 	
@@ -706,7 +712,7 @@ public class View {
 	 * @param node the {@link Node} to check the containment of
 	 * @return Returns whether the given {@link Node node} is part of the {@link View}.
 	 */
-	private boolean contains(Node node) {
+	boolean contains(Node node) {
 		return graph.getNodes().contains(node);
 	}
 	
@@ -716,7 +722,7 @@ public class View {
 	 * @param isDangling whether the given {@link Edge edge} is considered to be dangling
 	 * @return Returns whether the given {@link Edge edge} is part of the {@link View}.
 	 */
-	private boolean contains(Edge edge, boolean isDangling) {
+	boolean contains(Edge edge, boolean isDangling) {
 		return isDangling ? graph.getEdges().contains(edge) : graph.getEdges().contains(edge) && contains(edge.getSource()) && contains(edge.getTarget());
 	}
 	
@@ -725,7 +731,7 @@ public class View {
 	 * @param eObject an {@link EObject} form the {@link View#resource resource} to check the containment of
 	 * @return Returns whether the given {@link EObject eObject} is part of the {@link View}.
 	 */
-	private boolean contains(EObject eObject) {
+	boolean contains(EObject eObject) {
 		return graphMap.containsKey(eObject) && contains(graphMap.get(eObject));
 	}
 	
@@ -739,7 +745,7 @@ public class View {
 	 * @param isDangling whether the given {@link Edge edge} is considered to be dangling
 	 * @return Returns whether the specified {@link Edge} is part of the {@link View}.
 	 */
-	private boolean contains(EObject sourceEObject, EObject targetEObject, EReference eReference, boolean isDangling) {
+	boolean contains(EObject sourceEObject, EObject targetEObject, EReference eReference, boolean isDangling) {
 		if (sourceEObject == targetEObject) return false;
 		if(!graphMap.containsKey(sourceEObject) || !graphMap.containsKey(targetEObject)) return false;
 		Node sourceNode = graphMap.get(sourceEObject);
