@@ -10,11 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +31,10 @@ import org.eclipse.emf.henshin.model.Edge;
 import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.impl.NodeImpl;
 import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Benjamin Wagner
@@ -52,6 +51,8 @@ class ViewTest {
 	
 	private View viewOnScrumPlanningInstanceOne;
 
+	// setup
+	
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -81,6 +82,72 @@ class ViewTest {
 		viewOnScrumPlanningInstanceOne = null;
 	}
 
+	// helper methods and tests of the helper methods
+	
+	/**
+	 * A helper method to get a {@link EReference eReference} fron an {@link EClass eClass} by name.
+	 * If the given {@link EClass eClass} doesn't contain the named {@link EReference eReference} the test
+	 * that called this method will fail.
+	 * @param eClass the {@link EClass eClass} affiliated to the {@link EReference eReference}
+	 * @param name the {@link EReference#getName() name} of the {@link EReference eReference}
+	 * @return Returns the {@link EReference eReference}.
+	 */
+	final EReference getEReferenceFromEClass (EClass eClass, String name) {
+		
+		List<EReference> eReferences = eClass.getEAllReferences().stream().
+				filter(eReference -> eReference.getName().equals(name)).
+				collect(Collectors.toList());
+		assertEquals(1, eReferences.size());
+		
+		return eReferences.get(0);
+		
+	}
+	
+	/**
+	 * Test for the internal method {@link ViewTest#getEReferenceFromEClass(EClass, String)}.
+	 */
+	@Test
+	final void testGetEReferenceFromEClass () {
+		
+		EClass classEClass = getEClassFromResource(CRA_ECORE, "Class")[0];
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		assertEquals(encapsulates.getName(), "encapsulates");
+		assertEquals(encapsulates.getEContainingClass(), classEClass);
+		
+	}
+	
+	/**
+	 * A helper method to get a {@link EAttribute eAttribute} fron an {@link EClass eClass} by name.
+	 * If the given {@link EClass eClass} doesn't contain the named {@link EAttribute eAttribute} the test
+	 * that called this method will fail.
+	 * @param eClass the {@link EClass eClass} affiliated to the {@link EAttribute eAttribute}
+	 * @param name the {@link EAttribute#getName() name} of the {@link EAttribute eAttribute}
+	 * @return Returns the {@link EAttribute eAttribute}.
+	 */
+	final EAttribute getEAttributeFromEClass (EClass eClass, String name) {
+		
+		List<EAttribute> eAttributes = eClass.getEAllAttributes().stream().
+				filter(eAttribute -> eAttribute.getName().equals(name)).
+				collect(Collectors.toList());
+		assertEquals(1, eAttributes.size());
+		
+		return eAttributes.get(0);
+		
+	}
+	
+	/**
+	 * Test for the internal method {@link ViewTest#getEAttributeFromEClass(EClass, String)}.
+	 */
+	@Test
+	final void testGetEAttributeFromEClass () {
+		
+		EClass namedElement = getEClassFromResource(CRA_ECORE, "NamedElement")[0];
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElement, "name");
+		assertEquals(nameEAttribute.getName(), "name");
+		assertEquals(nameEAttribute.getEContainingClass(), namedElement);
+		
+	}
+	
 	/**
 	 * @param resource the {@link Resource} of the meta-model
 	 * @param names the names of the eClasses to return
@@ -149,7 +216,8 @@ class ViewTest {
 	}
 	
 	/**
-	 * 
+	 * A helper method to get {@link EObject eObjects} form a {@link Resource resource}.
+	 * If for any predicate no matching {@link EObject eObjects} are found the test that called this method will fail.
 	 * @param resource the {@link Resource} of the model
 	 * @param predicates a list of predicates for evaluating the {@link EObject eObjects} to be returned 
 	 * @return Returns a list of sets containing the {@link EObject eObjects} matched by the given predicates.
@@ -176,6 +244,10 @@ class ViewTest {
 				}
 			}
 			
+		}
+		
+		for (int i = 0; i < predicates.length; i++) {
+			assertNotNull(eObjectSets.get(i));
 		}
 		
 		return eObjectSets;
@@ -215,16 +287,18 @@ class ViewTest {
 		assertNotNull(stakeholder);
 		assertNotNull(backlog);
 		
-		Map<Integer, Set<EObject>> mapOfEObjectSets = getEObjectsFromResource (
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
 				SCRUM_PLANNIG_INSTANCE_ONE, 
 				eObject -> eObject.eClass() == stakeholder, 
 				eObject -> eObject.eClass() == backlog
 		);
 		
-		assertEquals(expectedStakeholderEObject, mapOfEObjectSets.get(0));
-		assertEquals(expectedBacklogEObjects, mapOfEObjectSets.get(1));
+		assertEquals(expectedStakeholderEObject, mapOfSets.get(0));
+		assertEquals(expectedBacklogEObjects, mapOfSets.get(1));
 		
 	}
+	
+	// begin test methods
 	
 	/**
 	 * Test method for {@link view.View#getNode(org.eclipse.emf.ecore.EObject)}.
@@ -246,7 +320,6 @@ class ViewTest {
 		
 	}
 
-	
 	/**
 	 * Test method for {@link view.View#getRandomNode()}.
 	 */
@@ -287,7 +360,6 @@ class ViewTest {
 		
 	}
 
-	
 	/**
 	 * Test method for {@link view.View#getObject(org.eclipse.emf.henshin.model.Node)}.
 	 */
@@ -322,7 +394,6 @@ class ViewTest {
 		
 	}
 
-	
 	/**
 	 * Test method for {@link view.View#isEmpty()}.
 	 */
@@ -335,6 +406,8 @@ class ViewTest {
 		
 	}
 
+	// extend(EClass)
+	
 	/**
 	 * Test method for {@link view.View#extend(org.eclipse.emf.ecore.EClass)} with 
 	 * an {@link EClass eClass} of an different model.
@@ -342,11 +415,53 @@ class ViewTest {
 	@Test
 	final void testExtendEClassDifferentModel () {
 		
-		EClass someEClassNotPartOfTheScrumPlanningMetamodel = (new NodeImpl()).eClass();
-		assertFalse(viewOnScrumPlanningInstanceOne.extend(someEClassNotPartOfTheScrumPlanningMetamodel));
+		EClass attributeEClass = getEClassFromResource(CRA_ECORE, "Attribute")[0];
+		EClass backlogEClass = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Backlog")[0];
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEClass, "workitems");
 		
-		// the view should still be empty
+		testExtendEClassDifferentModelEmptyView (attributeEClass);
+		
+		testExtendEClassDifferentModelNonEmptyView (attributeEClass, backlogWorkitemsEReference, backlogEClass);
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EClass)} method on an empty {@link View}
+	 * with an {@link EClass eClass} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model.
+	 * @param eClass an {@link EClass eClass} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEClassDifferentModelEmptyView (EClass eClass) {
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eClass));
 		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EClass)} method on an empty {@link View} with
+	 * an {@link EClass eClass} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model.
+	 * @param eClass an {@link EClass eClass} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eReferenceFromModel an {@link EReference eReference} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eClassFromModel an {@link EClass eClass} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEClassDifferentModelNonEmptyView (EClass eClass, EReference eReferenceFromModel, EClass eClassFromModel) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReferenceFromModel));
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClassFromModel));
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eClass));
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
 		
 	}
 	
@@ -360,57 +475,69 @@ class ViewTest {
 		// get the stakeholder and the backlog eClasses from the meta-model
 		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog");
 		EClass stakeholder = eClasses[0];
-		EClass backlog = eClasses[1];
-		assertNotNull(stakeholder);
-		assertNotNull(backlog);
 		
-		// extend the view
-		assertTrue(viewOnScrumPlanningInstanceOne.extend(stakeholder));
-		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
+		testExtendEClassSameModelEmptyView (stakeholder);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		// test the correctness
-		List<Node> nodes = viewOnScrumPlanningInstanceOne.graph.getNodes();
+		testExtendEClassSameModelEmptyViewTwice (stakeholder);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		assertEquals(3, nodes.size());
+		testExtendEClassSameModelEmptyView (eClasses);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		Set<EObject> actualStakeholderEObjects = nodes.stream().
-				filter(node -> node.getType().getName().equals("Stakeholder")).
-				map(viewOnScrumPlanningInstanceOne::getObject).
-				collect(Collectors.toSet());
+		testExtendEClassSameModelEmptyViewTwice (eClasses);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		Set<EObject> actualBacklogEObjects = nodes.stream().
-				filter(node -> node.getType().getName().equals("Backlog")).
-				map(viewOnScrumPlanningInstanceOne::getObject).
-				collect(Collectors.toSet());
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EClass)} method on an empty {@link View}.
+	 * @param eClasses an array of {@link EClass eClasses} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEClassSameModelEmptyView (EClass... eClasses) {
 		
-		Map<Integer, Set<EObject>> listOfEObjectLists = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
-				eObject -> eObject.eClass() == stakeholder, eObject -> eObject.eClass() == backlog);
-		Set<EObject> expectedStakeholderEObjects = listOfEObjectLists.getOrDefault(0, new HashSet<>());
-		Set<EObject> expectedBacklogEObjects = listOfEObjectLists.getOrDefault(1, new HashSet<>());
+		List<EClass> listOfEClasses = List.of(eClasses);
 		
-		assertEquals(expectedStakeholderEObjects, actualStakeholderEObjects);
-		assertEquals(expectedBacklogEObjects, actualBacklogEObjects);
+		for (EClass eClass : listOfEClasses) {
+			assertTrue(viewOnScrumPlanningInstanceOne.extend(eClass));
+		}
 		
-		// try to add the same EClasses again
-		assertFalse(viewOnScrumPlanningInstanceOne.extend(stakeholder));
-		assertFalse(viewOnScrumPlanningInstanceOne.extend(backlog));
+		Set<EObject> expedtedEObjects = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> listOfEClasses.contains(eObject.eClass())).get(0);
 		
-		Set<EObject> actualStakeholderEObjectsTwo = nodes.stream().
-				filter(node -> node.getType().getName().equals("Stakeholder")).
-				map(viewOnScrumPlanningInstanceOne::getObject).
-				collect(Collectors.toSet());
+		assertEquals(expedtedEObjects, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expedtedEObjects, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		assertEquals(expedtedEObjects, viewOnScrumPlanningInstanceOne.graph.getNodes().stream().map(viewOnScrumPlanningInstanceOne::getObject).collect(Collectors.toSet()));
+		assertTrue(viewOnScrumPlanningInstanceOne.graph.getEdges().isEmpty());
 		
-		Set<EObject> actualBacklogEObjectsTwo = nodes.stream().
-				filter(node -> node.getType().getName().equals("Backlog")).
-				map(viewOnScrumPlanningInstanceOne::getObject).
-				collect(Collectors.toSet());
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EClass)} method on an empty {@link View}
+	 * with the same parameter twice. The second method call should not work and nothing should change.
+	 * @param eClass an {@link EClass eClass} of the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEClassSameModelEmptyViewTwice (EClass... eClasses) {
 		
-		// nothing should have changed
-		assertEquals(actualBacklogEObjectsTwo, actualBacklogEObjects);
-		assertEquals(actualStakeholderEObjectsTwo, actualStakeholderEObjects);
+		testExtendEClassSameModelEmptyView (eClasses);
+		
+		List<EClass> listOfEClasses = List.of(eClasses);
+		
+		for (EClass eClass : listOfEClasses) {
+			assertFalse(viewOnScrumPlanningInstanceOne.extend(eClass));
+		}
+		
+		
+		Set<EObject> expedtedEObjects = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> listOfEClasses.contains(eObject.eClass())).get(0);
+		
+		assertEquals(expedtedEObjects, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expedtedEObjects, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		assertEquals(expedtedEObjects, viewOnScrumPlanningInstanceOne.graph.getNodes().stream().map(viewOnScrumPlanningInstanceOne::getObject).collect(Collectors.toSet()));
+		assertTrue(viewOnScrumPlanningInstanceOne.graph.getEdges().isEmpty());
 		
 	}
 
+	// extend(EReference)
+	
 	/**
 	 * Test method for {@link view.View#extend(org.eclipse.emf.ecore.EReference)} with
 	 * an {@link EReference eReference} form a different model.
@@ -418,11 +545,54 @@ class ViewTest {
 	@Test
 	final void testExtendEReferenceDifferentModel () {
 		
-		EReference someEReferenceNotPartOfTheScrumPlanningMetamodel = (new NodeImpl()).eClass().getEAllReferences().get(0);
-		assertFalse(viewOnScrumPlanningInstanceOne.extend(someEReferenceNotPartOfTheScrumPlanningMetamodel));
+		EClass methodEClass = getEClassFromResource(CRA_ECORE, "Method")[0];
+		EReference dataDependencyEReference = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EClass backlogEClass = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Backlog")[0];
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEClass, "workitems");
 		
-		// the view should still be empty
+		testExtendEReferenceDifferentModelEmptyView (dataDependencyEReference);
+		
+		testExtendEReferenceDifferentModelNonEmptyView (dataDependencyEReference, backlogWorkitemsEReference, backlogEClass);
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method on an empty {@link View}
+	 * with an {@link EReference eReference} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model.
+	 * @param eReference an {@link EReference eReference} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEReferenceDifferentModelEmptyView (EReference eReference) {
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eReference));
 		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method on an empty {@link View} with
+	 * an {@link EReference eReference} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model.
+	 * @param eReference an {@link EReference eReference} that is not from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eReferenceFromModel an {@link EReference eReference} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eClassFromModel an {@link EClass eClass} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testExtendEReferenceDifferentModelNonEmptyView (EReference eReference, EReference eReferenceFromModel, EClass eClassFromModel) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReferenceFromModel));
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClassFromModel));
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
 		
 	}
 	
@@ -434,98 +604,66 @@ class ViewTest {
 	final void testExtendEReferenceSameModel () {
 		
 		// get the expected nodes and edges
-		EObject backlog = null;
-		
-		Map<Integer, Set<EObject>> listOfEObjectLists = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
 				eObject -> eObject.eClass().getName().equals("Backlog"),
-				eObject -> eObject.eClass().getName().equals("WorkItem"));
-		Set<EObject> backlogSet = listOfEObjectLists.getOrDefault(0, new HashSet<>());
-		Set<EObject> workitemsSet = listOfEObjectLists.getOrDefault(1, new HashSet<>());
-		assertEquals(1, backlogSet.size());
-		backlog = backlogSet.iterator().next();
-		assertEquals(4, workitemsSet.size());
+				eObject -> eObject.eClass().getName().equals("Stakeholder"));
+		EObject backlog = mapOfSets.get(0).iterator().next();
+		Set<EObject> stakeholderEObjects = mapOfSets.get(1);
+		assertEquals(2, stakeholderEObjects.size());
 		
 		// get the workitems EReference from the meta-model
 		// it needs to be fetched using the backlog as the name workitems is not an unique identifier
-		EReference workitems = null;
-		for (EReference eReference : backlog.eClass().getEAllReferences()) {
-			if (eReference.getName().equals("workitems")) {
-				workitems = eReference;
-			}
-		}
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlog.eClass(), "workitems");
 		
-		testExtendEReferenceSameModelEmptyView(backlog, workitemsSet, workitems);
-		
-		testExtendEReferenceSameModelViewWithNodes(backlog, workitemsSet, workitems);
-		
-	}
-
-	/**
-	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with some of the nodes of the reference already inserted.
-	 * @param backlog the {@link EObject eObject} form the SCRUM_PLANNIG_INSTANCE_ONE
-	 * @param workitemsSet a list of all workitem {@link EObject eObjects} form the SCRUM_PLANNIG_INSTANCE_ONE
-	 * @param workitems the {@link EReference eReference} from the SCRUM_PLANNIG_INSTANCE_ONE between the backlog and its workitems
-	 */
-	private void testExtendEReferenceSameModelViewWithNodes(EObject backlog, Set<EObject> workitemsSet,
-			EReference workitems) {
-		
-		Set<EObject> actualEObjectsGraphMap;
-		Set<EObject> actualEObjectsObjectMap;
-		Set<EObject> actualWorkitems;
-		Set<EObject> allExpectedEObjects = new HashSet<>(workitemsSet);
-		allExpectedEObjects.add(backlog);
-		
-		// clear view and test with existent node
+		testExtendEReferenceSameModelEmptyView(backlogWorkitemsEReference);
 		viewOnScrumPlanningInstanceOne.clear();
-		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
-		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
-		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
 		
-		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
-		assertNotNull(viewOnScrumPlanningInstanceOne.getNode(backlog));
+		testExtendEReferenceSameModelViewWithNodes(backlogWorkitemsEReference, backlog);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		// extend by workitems
-		assertTrue(viewOnScrumPlanningInstanceOne.extend(workitems));
+		testExtendEReferenceSameModelViewWithNodes(backlogWorkitemsEReference, stakeholderEObjects.toArray(new EObject[] {}));
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		// test nodes
-		assertEquals(1, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
-		assertEquals(backlog, viewOnScrumPlanningInstanceOne.getObject(viewOnScrumPlanningInstanceOne.graph.getNodes().get(0)));
+		testExtendEReferenceSameModelViewEmptyViewTwice(backlogWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
-		actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		testExtendEReferenceSameModelViewWithNodesTwice(backlogWorkitemsEReference, backlog);
+		viewOnScrumPlanningInstanceOne.clear();
 		
-		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
-		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
-		
-		// test edges
-		assertEquals(4, viewOnScrumPlanningInstanceOne.graph.getEdges().size());
-		actualWorkitems = new HashSet<>();
-		
-		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
-			assertEquals(workitems, edge.getType());
-			assertEquals(backlog, viewOnScrumPlanningInstanceOne.getObject(edge.getSource()));
-			actualWorkitems.add(viewOnScrumPlanningInstanceOne.getObject(edge.getTarget()));
-		}
+		testExtendEReferenceSameModelViewWithNodesTwice(backlogWorkitemsEReference, stakeholderEObjects.toArray(new EObject[] {}));
 		
 	}
 
 	/**
-     * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with an an empty view.
-     * No {@link Node nodes} should be added to the {@link view.View#graph graph} by {@link view.View#extend(org.eclipse.emf.ecore.EReference)}.
-	 * @param backlog the {@link EObject eObject} form the SCRUM_PLANNIG_INSTANCE_ONE
-	 * @param workitemsSet a list of all workitem {@link EObject eObjects} form the SCRUM_PLANNIG_INSTANCE_ONE
-	 * @param workitems the {@link EReference eReference} from the SCRUM_PLANNIG_INSTANCE_ONE between the backlog and its workitems
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with some of the nodes already inserted.
+	 * @param eReference an {@link EReference eReference} from the SCRUM_PLANNIG_ECORE meta-model to extend by
+	 * @param eObjects an array of {@link EObject eObjects} form the SCRUM_PLANNIG_INSTANCE_ONE to fill the {@link View} with
 	 */
-	private void testExtendEReferenceSameModelEmptyView(EObject backlog, Set<EObject> workitemsSet,
-			EReference workitems) {
+	private void testExtendEReferenceSameModelViewWithNodes(EReference eReference, EObject... eObjects) {
 		
-		assertTrue(viewOnScrumPlanningInstanceOne.extend(workitems));
-		assertEquals(0, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		for (EObject eObject : eObjects) {
+			assertTrue(viewOnScrumPlanningInstanceOne.extend(eObject));
+		}
 		
-		// test nodes
+		// extend by the reference
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReference));
 		
-		Set<EObject> allExpectedEObjects = new HashSet<>(workitemsSet);
-		allExpectedEObjects.add(backlog);
+		// test nodes from graph
+		assertEquals (
+				Set.of(eObjects),
+				viewOnScrumPlanningInstanceOne.graph.getNodes().stream().
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet())
+		);
+		
+		// test nodes from the maps
+		Set<EObject> allExpectedEObjects = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			boolean eObjectIsOfContainingEClass = eReference.getEContainingClass() == eObject.eClass();
+			boolean eObjectIsOfReferencedType = eReference.getEReferenceType() == eObject.eClass();
+			return eObjectIsOfContainingEClass | eObjectIsOfReferencedType;
+		}).get(0);
+		
+		allExpectedEObjects.addAll(List.of(eObjects));
 		
 		Set<EObject> actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
 		Set<EObject> actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
@@ -534,18 +672,304 @@ class ViewTest {
 		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
 		
 		// test edges
-		assertEquals(4, viewOnScrumPlanningInstanceOne.graph.getEdges().size());
-		Set<EObject> actualWorkitems = new HashSet<>();
+		Set<EObject> expectedEObjectsWithTheEReference = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			
+			boolean eClassOfeObjectContainsTheReference = eObject.eClass().getEAllReferences().contains(eReference);
+			
+			if (eClassOfeObjectContainsTheReference) {
+				return eObject.eGet(eReference) != null;
+			} else {
+				return false;
+			}
+			
+		}).get(0);
 		
-		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
-			assertEquals(workitems, edge.getType());
-			assertEquals(backlog, viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
-			actualWorkitems.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		Set<EObject> expectedReferencedEObjects = new HashSet<EObject>();
+		
+		for (EObject eObject : expectedEObjectsWithTheEReference) {
+			Object referenced = eObject.eGet(eReference);
+			if (referenced instanceof EObject) {
+				expectedReferencedEObjects.add((EObject) referenced);
+			} else if (referenced instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<EObject> listOfEObjects = (List<EObject>) referenced;
+				expectedReferencedEObjects.addAll(listOfEObjects);
+			}
 		}
 		
-		assertEquals(workitemsSet, actualWorkitems);
+		Set<EObject> actualSourceEObjects = new HashSet<EObject>();
+		Set<EObject> actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
 		
 	}
+	
+	/**
+	 * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with some of the nodes already inserted
+	 * appying the same parameter twice. The second time shoulnd't work and nothing should change.
+	 * @param eReference an {@link EReference eReference} from the SCRUM_PLANNIG_ECORE meta-model to extend by
+	 * @param eObjects an array of {@link EObject eObjects} form the SCRUM_PLANNIG_INSTANCE_ONE to fill the {@link View} with
+	 */
+	private void testExtendEReferenceSameModelViewWithNodesTwice (EReference eReference, EObject... eObjects) {
+		
+		for (EObject eObject : eObjects) {
+			assertTrue(viewOnScrumPlanningInstanceOne.extend(eObject));
+		}
+		
+		// extend by the reference
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		// test nodes from graph
+		assertEquals (
+				Set.of(eObjects),
+				viewOnScrumPlanningInstanceOne.graph.getNodes().stream().
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet())
+		);
+		
+		// test nodes from the maps
+		Set<EObject> allExpectedEObjects = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			boolean eObjectIsOfContainingEClass = eReference.getEContainingClass() == eObject.eClass();
+			boolean eObjectIsOfReferencedType = eReference.getEReferenceType() == eObject.eClass();
+			return eObjectIsOfContainingEClass | eObjectIsOfReferencedType;
+		}).get(0);
+		
+		allExpectedEObjects.addAll(List.of(eObjects));
+		
+		Set<EObject> actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		Set<EObject> actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		Set<EObject> expectedEObjectsWithTheEReference = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			
+			boolean eClassOfeObjectContainsTheReference = eObject.eClass().getEAllReferences().contains(eReference);
+			
+			if (eClassOfeObjectContainsTheReference) {
+				return eObject.eGet(eReference) != null;
+			} else {
+				return false;
+			}
+			
+		}).get(0);
+		
+		Set<EObject> expectedReferencedEObjects = new HashSet<EObject>();
+		
+		for (EObject eObject : expectedEObjectsWithTheEReference) {
+			Object referenced = eObject.eGet(eReference);
+			if (referenced instanceof EObject) {
+				expectedReferencedEObjects.add((EObject) referenced);
+			} else if (referenced instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<EObject> listOfEObjects = (List<EObject>) referenced;
+				expectedReferencedEObjects.addAll(listOfEObjects);
+			}
+		}
+		
+		Set<EObject> actualSourceEObjects = new HashSet<EObject>();
+		Set<EObject> actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
+		
+		// the second time
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		// test nodes from graph
+		assertEquals (
+				Set.of(eObjects),
+				viewOnScrumPlanningInstanceOne.graph.getNodes().stream().
+				map(viewOnScrumPlanningInstanceOne::getObject).
+				collect(Collectors.toSet())
+		);
+		
+		// test nodes from the maps
+		actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		actualSourceEObjects = new HashSet<EObject>();
+		actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
+		
+	}
+	
+	/**
+     * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with an an empty {@link View}.
+     * No {@link Node nodes} should be added to the {@link view.View#graph graph} by {@link view.View#extend(org.eclipse.emf.ecore.EReference)}.
+	 * @param eReference the {@link EReference eReference} from the SCRUM_PLANNIG_ECORE meta-model used to extend the {@link View}.
+	 */
+	private void testExtendEReferenceSameModelEmptyView (EReference eReference) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		// test nodes from the graph
+		assertEquals(0, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		
+		// test nodes from the maps
+		Set<EObject> expectedEObjectsWithTheEReference = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			
+			boolean eClassOfeObjectContainsTheReference = eObject.eClass().getEAllReferences().contains(eReference);
+			
+			if (eClassOfeObjectContainsTheReference) {
+				return eObject.eGet(eReference) != null;
+			} else {
+				return false;
+			}
+			
+		}).get(0);
+		
+		Set<EObject> expectedReferencedEObjects = new HashSet<EObject>();
+		
+		for (EObject eObject : expectedEObjectsWithTheEReference) {
+			Object referenced = eObject.eGet(eReference);
+			if (referenced instanceof EObject) {
+				expectedReferencedEObjects.add((EObject) referenced);
+			} else if (referenced instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<EObject> listOfEObjects = (List<EObject>) referenced;
+				expectedReferencedEObjects.addAll(listOfEObjects);
+			}
+		}
+		
+		Set<EObject> allExpectedEObjects = new HashSet<>(expectedEObjectsWithTheEReference);
+		allExpectedEObjects.addAll(expectedReferencedEObjects);
+		
+		Set<EObject> actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		Set<EObject> actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		Set<EObject> actualSourceEObjects = new HashSet<EObject>();
+		Set<EObject> actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
+		
+	}
+	
+	/**
+     * Tests the {@link view.View#extend(org.eclipse.emf.ecore.EReference)} method with an an empty {@link View} adding
+     * the same parameter twice the second time shouldn't work and nothing should change.
+	 * @param eReference the {@link EReference eReference} from the SCRUM_PLANNIG_ECORE meta-model used to extend the {@link View}.
+	 */
+	private void testExtendEReferenceSameModelViewEmptyViewTwice (EReference eReference) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		// test nodes from the graph
+		assertEquals(0, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		
+		// test nodes from the maps
+		Set<EObject> expectedEObjectsWithTheEReference = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, eObject -> {
+			
+			boolean eClassOfeObjectContainsTheReference = eObject.eClass().getEAllReferences().contains(eReference);
+			
+			if (eClassOfeObjectContainsTheReference) {
+				return eObject.eGet(eReference) != null;
+			} else {
+				return false;
+			}
+			
+		}).get(0);
+		
+		Set<EObject> expectedReferencedEObjects = new HashSet<EObject>();
+		
+		for (EObject eObject : expectedEObjectsWithTheEReference) {
+			Object referenced = eObject.eGet(eReference);
+			if (referenced instanceof EObject) {
+				expectedReferencedEObjects.add((EObject) referenced);
+			} else if (referenced instanceof List<?>) {
+				@SuppressWarnings("unchecked")
+				List<EObject> listOfEObjects = (List<EObject>) referenced;
+				expectedReferencedEObjects.addAll(listOfEObjects);
+			}
+		}
+		
+		Set<EObject> allExpectedEObjects = new HashSet<>(expectedEObjectsWithTheEReference);
+		allExpectedEObjects.addAll(expectedReferencedEObjects);
+		
+		Set<EObject> actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		Set<EObject> actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		Set<EObject> actualSourceEObjects = new HashSet<EObject>();
+		Set<EObject> actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
+		
+		// add  the second time
+		assertFalse(viewOnScrumPlanningInstanceOne.extend(eReference));
+		
+		// test nodes from the graph
+		assertEquals(0, viewOnScrumPlanningInstanceOne.graph.getNodes().size());
+		
+		// test nodes from the maps
+		actualEObjectsGraphMap = viewOnScrumPlanningInstanceOne.graphMap.keySet();
+		actualEObjectsObjectMap = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertEquals(allExpectedEObjects, actualEObjectsGraphMap);
+		assertEquals(allExpectedEObjects, actualEObjectsObjectMap);
+		
+		// test edges
+		actualSourceEObjects = new HashSet<EObject>();
+		actualTargetEObjects = new HashSet<EObject>();
+		
+		for (Edge edge : viewOnScrumPlanningInstanceOne.graph.getEdges()) {
+			assertEquals(eReference, edge.getType());
+			actualSourceEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getSource()));
+			actualTargetEObjects.add(viewOnScrumPlanningInstanceOne.objectMap.get(edge.getTarget()));
+		}
+		
+		assertEquals(expectedEObjectsWithTheEReference, actualSourceEObjects);
+		assertEquals(expectedReferencedEObjects, actualTargetEObjects);
+		
+	}
+	
+	// extend(EObject)
 	
 	/**
 	 * Test method for {@link view.View#extend(org.eclipse.emf.ecore.EObject)}  with
@@ -571,13 +995,11 @@ class ViewTest {
 		
 		// get the Stakeholder and Backlog EObjects from the model
 		
-		Map<Integer, Set<EObject>> listOfEObjectLists = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
 				eObject -> eObject.eClass().getName().equals("Backlog"),
 				eObject -> eObject.eClass().getName().equals("Stakeholder"));
-		Set<EObject> backlogSet = listOfEObjectLists.getOrDefault(0, new HashSet<>());
-		Set<EObject> stakeholder = listOfEObjectLists.getOrDefault(1, new HashSet<>());
-		assertEquals(1, backlogSet.size());
-		EObject backlog = backlogSet.iterator().next();
+		EObject backlog = mapOfSets.get(0).iterator().next();
+		Set<EObject> stakeholder = mapOfSets.get(1);
 		assertEquals(2, stakeholder.size());
 		
 		// extend the view
@@ -623,7 +1045,6 @@ class ViewTest {
 		
 	}
 	
-
 	/**
 	 * Test method for {@link view.View#extend(org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EReference)}.
 	 */
@@ -631,18 +1052,17 @@ class ViewTest {
 	final void testExtendEObjectEObjectEReferenceSameModel() {
 		
 		// get the expected nodes and edges
-		Map<Integer, Set<EObject>> mapOfEObjectSets = getEObjectsFromResource (
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
 				SCRUM_PLANNIG_INSTANCE_ONE, 
 				eObject -> eObject.eClass().getName().equals("Backlog"),
 				eObject -> eObject.eClass().getName().equals("WorkItem"),
 				eObject -> eObject.eClass().getName().equals("Stakeholder")
 		);
-		Set<EObject> backlogSet = mapOfEObjectSets.getOrDefault(0, new HashSet<>());
-		Set<EObject> workitemsSet = mapOfEObjectSets.getOrDefault(1, new HashSet<>());
-		Set<EObject> stakeholderSet = mapOfEObjectSets.getOrDefault(2, new HashSet<>());
 		
-		assertEquals(1, backlogSet.size());
-		EObject backlog = backlogSet.iterator().next();
+		EObject backlog = mapOfSets.get(0).iterator().next();
+		Set<EObject> workitemsSet = mapOfSets.get(1);
+		Set<EObject> stakeholderSet = mapOfSets.get(2);
+		
 		assertEquals(4, workitemsSet.size());
 		assertEquals(2, stakeholderSet.size());
 		
@@ -675,7 +1095,8 @@ class ViewTest {
 		
 	}
 	
-
+	// extend(EObject, EObject, EReference)
+	
 	/**
 	 * @param backlog the backlog {@link EObject eObject} from the scrumPlanningInstanceOne
 	 * @param workitemsSet all workitem {@link EObject eObjects} form the scrumPlanningInstanceOne
@@ -777,7 +1198,6 @@ class ViewTest {
 		
 	}
 	
-
 	/**
 	 * @param backlog the backlog {@link EObject eObject} from the scrumPlanningInstanceOne
 	 * @param workitemsSet all workitem {@link EObject eObjects} form the scrumPlanningInstanceOne
@@ -868,7 +1288,6 @@ class ViewTest {
 		assertEquals(workitemsSet, actualWorkitems);
 		
 	}
-
 	
 	/**
 	 * Test method for {@link view.View#extend(org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EReference)}
@@ -878,67 +1297,32 @@ class ViewTest {
 	final public void testExtendEObjectEObjectEReferenceDifferentModel () {
 		
 		// get CRA metamodel elements
-		TreeIterator<EObject> iterator = CRA_ECORE.getAllContents();
-		EClass namedElement = null;
-		EAttribute name = null;
-		EReference encapsulates = null;
 		
-		while (iterator.hasNext()) {
-			EObject eObject = (EObject) iterator.next();
-			if (eObject instanceof EClass && ((EClass) eObject).getName().equals("NamedElement")) {
-				namedElement = (EClass) eObject;
-				List<EAttribute> attributes = namedElement.getEAttributes().stream().
-						filter(eAttribute -> eAttribute.getName().equals("name")).
-						collect(Collectors.toList());
-				assertEquals(1, attributes.size());
-				name = attributes.get(0);
-			} else if (eObject instanceof EClass && ((EClass) eObject).getName().equals("Class")) {
-				List<EReference> eReferences = ((EClass) eObject).getEAllReferences().stream().
-						filter(eReference -> eReference.getName().equals("encapsulates")).
-						collect(Collectors.toList());
-				assertEquals(1, eReferences.size());
-				encapsulates = eReferences.get(0);
-			}
-		}
-		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
 		assertNotNull(namedElement);
+		assertNotNull(classEClass);
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
 		assertNotNull(name);
 		assertNotNull(encapsulates);
 		
 		// get CRAInstanceOne elements
-		iterator = CRA_INSTANCE_ONE.getAllContents();
-		EObject method2 = null;
-		EObject method3 = null;
-		EObject attribute5 = null;
-		EObject class8 = null;
-		while (iterator.hasNext()) {
-			EObject eObject = (EObject) iterator.next();
-			
-			if(eObject.eClass().getName().equals("ClassModel")) continue;
-			
-			String nameAttributeVale = (String) eObject.eGet(name);
-			
-			switch (nameAttributeVale) {
-				case "2":
-					method2 = eObject;
-					break;
-				case "3":
-					method3 = eObject;
-					break;
-				case "5":
-					attribute5 = eObject;
-					break;
-				case "8":
-					class8 = eObject;
-					break;
-			}
-			
-		}
 		
-		assertNotNull(method2);
-		assertNotNull(method3);
-		assertNotNull(attribute5);
-		assertNotNull(class8);
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("2"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("3"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("5"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("8")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject method3 = mapOfSets.get(1).iterator().next();
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class8 = mapOfSets.get(3).iterator().next();
 		
 		assertFalse(viewOnScrumPlanningInstanceOne.extend(method3, attribute5, encapsulates));
 		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
@@ -951,6 +1335,8 @@ class ViewTest {
 		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
 		
 	}
+	
+	// reduce(EClass)
 	
 	/**
 	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EClass)} with
@@ -966,7 +1352,6 @@ class ViewTest {
 		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
 		
 	}
-
 	
 	/**
 	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EClass)} with
@@ -993,7 +1378,7 @@ class ViewTest {
 		backlogWorkitems = workitemEReferences.get(0);
 		
 		Set<EObject> expectedBacklogEObjects = getEObjectsFromResource (SCRUM_PLANNIG_INSTANCE_ONE, 
-				eObject -> eObject.eClass() == backlog).getOrDefault(0, new HashSet<>());
+				eObject -> eObject.eClass() == backlog).get(0);
 		
 		testReduceEClassSameModelNoEdgesInView(stakeholder, backlog, expectedBacklogEObjects);
 		
@@ -1011,7 +1396,7 @@ class ViewTest {
 	 * @param backlogWorkitems the {@link EReference eReference} from the {@code SCRUM_PLANNIG_ECORE} between the backlog and its workitems
 	 * @param expectedBacklogEObjects the set of all backlog-{@link EObject eObject} from the SCRUM_PLANNIG_INSTANCE_ONE
 	 */
-	private void testReduceEClassSameModelEdgesInView(EClass backlog, EClass workitem, EReference backlogWorkitems,
+	private void testReduceEClassSameModelEdgesInView (EClass backlog, EClass workitem, EReference backlogWorkitems,
 			Set<EObject> expectedBacklogEObjects) {
 		
 		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
@@ -1021,7 +1406,7 @@ class ViewTest {
 		
 		// the workitem eObjects should not be in the graph anymore but in the maps as there are edges that need them
 		Set<EObject> workitemsSet = getEObjectsFromResource (SCRUM_PLANNIG_INSTANCE_ONE, 
-				eObject -> eObject.eClass() == workitem).getOrDefault(0, new HashSet<>());
+				eObject -> eObject.eClass() == workitem).get(0);
 		Set<EObject> expectedEObjects = new HashSet<>();
 		assertEquals(1, expectedBacklogEObjects.size());
 		EObject backlogEObject = expectedBacklogEObjects.iterator().next();
@@ -1068,7 +1453,7 @@ class ViewTest {
 	 * @param backlog the {@link EClass eClass} from the {@code SCRUM_PLANNIG_ECORE}
 	 * @param expectedBacklogEObjects the set of all backlog-{@link EObject eObject} from the SCRUM_PLANNIG_INSTANCE_ONE
 	 */
-	private void testReduceEClassSameModelNoEdgesInView(EClass stakeholder, EClass backlog, Set<EObject> expectedBacklogEObjects) {
+	private void testReduceEClassSameModelNoEdgesInView (EClass stakeholder, EClass backlog, Set<EObject> expectedBacklogEObjects) {
 		
 		assertTrue(viewOnScrumPlanningInstanceOne.extend(backlog));
 		assertTrue(viewOnScrumPlanningInstanceOne.reduce(backlog));
@@ -1109,15 +1494,148 @@ class ViewTest {
 
 	}
 	
-
+	// reduce(EReference)
+	
 	/**
-	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EReference)}.
+	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} with
+	 * an {@link EReference eReference} from a different model.
 	 */
 	@Test
-	final void testReduceEReference() {
-		fail("Not yet implemented"); // TODO
+	final void testReduceEReferenceDifferentModel () {
+		
+		EClass workitemEClass = getEClassFromResource(SCRUM_PLANNIG_ECORE, "WorkItem")[0];
+		EClass classEClass = getEClassFromResource(CRA_ECORE, "Class")[0];
+		EReference encapsulatesEReference = getEReferenceFromEClass(classEClass, "encapsulates");
+		
+		testReduceEReferenceEmptyView (encapsulatesEReference);
+		
+		testReduceEReferenceDifferentModelNonEmptyView (encapsulatesEReference, workitemEClass);
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} method on an empty {@link View}.
+	 * @param eReference an {@link EReference eReference}.
+	 */
+	private void testReduceEReferenceEmptyView (EReference eReference) {
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.reduce(eReference));
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} method on an {@link View}
+	 * {@link view.View#extend(EClass) extended by} the given {@link EClass eClass} with an
+	 * {@link EReference eReference} from a different model.
+	 * @param eReference an {@link EReference eReference} that is not from the  {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eClass an {@link EClass eClass} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testReduceEReferenceDifferentModelNonEmptyView (EReference eReference, EClass eClass) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClass));
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.reduce(eReference));
+		assertTrue(viewOnScrumPlanningInstanceOne.graph.getEdges().isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.graph.getNodes().isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+			
+	}
+	
+	/**
+	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} with
+	 * {@link EReference eReferences} from the same model.
+	 */
+	@Test
+	final void testReduceEReferenceSameModel () {
+		
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "WorkItem", "Backlog", "Stakeholder");
+		EClass workitemEClass = eClasses[0];
+		EClass backlogEClass = eClasses[1];
+		EClass stakeholder = eClasses[2];
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEClass, "workitems");
+		EReference stakeholderWorkitemsEReference = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		testReduceEReferenceEmptyView(backlogWorkitemsEReference);
+		
+		testReduceEReferenceSameModelNoMatchingEdges(backlogWorkitemsEReference, workitemEClass, backlogEClass, stakeholderWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		testReduceEReferenceSameModelNoMatchingEdges(stakeholderWorkitemsEReference, workitemEClass, backlogEClass, backlogWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		testReduceEReferenceSameModelIdempotence(stakeholderWorkitemsEReference);
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		testReduceEReferenceSameModelIdempotence(backlogWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
+			
+	}
+	
+	/**
+	 * Tests the {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} method on an {@link View}
+	 * {@link view.View#extend(EClass) extended by} the given {@link EClass eClasses} and {@link view.View#extend(EReference) extended by}
+	 * the given {@link EReference eReferenceToExtend} with an {@link EReference eReferenceToReduce} that is not part of the view.
+	 * @param eReferenceToExtend an {@link EReference eReference} from the  {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eClassToExtendOne an {@link EClass eClass} from the  {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eClassToExtendTwo another {@link EClass eClass} from the  {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eReferenceToReduce another {@link EReference eReference} from the  {@code SCRUM_PLANNIG_ECORE} meta-model
+	 */
+	private void testReduceEReferenceSameModelNoMatchingEdges (EReference eReferenceToExtend, EClass eClassToExtendOne, EClass eClassToExtendTwo, EReference eReferenceToReduce) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReferenceToExtend));
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClassToExtendOne));
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClassToExtendTwo));
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.reduce(eReferenceToReduce));
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		
+	}
+	
+	/**
+	 * Tests the {@link view.View#reduce(org.eclipse.emf.ecore.EReference)} method on an empty {@link View}
+	 * by {@link view.View#extend(EReference) extending by} the given eReference and {@link view.View#reduce(EReference) reducing} again.
+	 * @param eReference the {@link EReference eReference} to use
+	 */
+	private void testReduceEReferenceSameModelIdempotence (EReference eReference) {
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eReference));
+		assertTrue(viewOnScrumPlanningInstanceOne.reduce(eReference));
+
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		
 	}
 
+	// reduce(EObject)
+	
 	/**
 	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject)}.
 	 */
@@ -1126,6 +1644,8 @@ class ViewTest {
 		fail("Not yet implemented"); // TODO
 	}
 
+	// reduce(EObject, EObject, EReference)
+	
 	/**
 	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EObject, org.eclipse.emf.ecore.EReference)}.
 	 */

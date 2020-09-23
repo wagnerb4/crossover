@@ -300,9 +300,10 @@ public class View {
 	/**
 	 * Removes all instances of the {@code eReference} in the {@link View#resource resource} from the {@link View} using the {@link View#reduce(EObject, EObject, EReference)} method.
 	 * @param eReference the {@link EReference} to remove
-	 * @return Returns {@code true} if at least one instance of the {@code eReference} has been removed successfully and {@code false} otherwise.
+	 * @return Returns {@code true} if at least one instance of the {@code eReference} has been found and all found instances have been removed successfully, {@code false} otherwise.
 	 */
 	public boolean reduce(EReference eReference) {
+		
 		TreeIterator<EObject> iterator = resource.getAllContents();
 		boolean foundMatch = false;
 		
@@ -327,7 +328,10 @@ public class View {
 			}
 		}
 		
-		return foundMatch;
+		boolean allReferencesRemoved = graph.getEdges().stream().allMatch(edge -> !edge.getType().equals(eReference));
+		
+		return foundMatch & allReferencesRemoved;
+		
 	}
 	
 	/**
@@ -364,6 +368,7 @@ public class View {
 	 * Returns {@code false} if the input parameters don't match the required conditions or the specified {@link Edge edge} is not {@link View#contains(EObject, EObject, EReference, boolean) contained} in the {@link View}.
 	 */
 	public boolean reduce(EObject eObject, EObject referencedEObject, EReference eReference) {
+		
 		// check if the eObject is contained in the resource
 		String uriFragment = resource.getURIFragment(eObject);
 		if (uriFragment == null || uriFragment.isEmpty() || uriFragment.equals("/-1")) return false;
@@ -408,11 +413,35 @@ public class View {
 					edge.getTarget() == graphMap.get(referencedEObject))
 				) {
 				foundEdge = true;
+				Node sourceNode = edge.getSource();
+				Node targetNode = edge.getTarget();
 				removedEdge &= graph.removeEdge(edge);
+				// remove nodes if the edge was dangling and no other edge needs them
+				
+				if (!graph.getNodes().contains(sourceNode)) {
+					boolean existsOtherEdgeWithSource = graph.getEdges().stream().anyMatch(edgeTwo -> edgeTwo.getSource() == sourceNode || edgeTwo.getTarget() == sourceNode);
+					if(!existsOtherEdgeWithSource) {
+						EObject eObjectForNode = objectMap.get(sourceNode);
+						graphMap.remove(eObjectForNode, sourceNode);
+						objectMap.remove(sourceNode, eObjectForNode);
+					}
+				}
+				
+				if (!graph.getNodes().contains(targetNode)) {
+					boolean existsOtherEdgeWithTarget = graph.getEdges().stream().anyMatch(edgeTwo -> edgeTwo.getSource() == targetNode || edgeTwo.getTarget() == targetNode);
+					if(!existsOtherEdgeWithTarget) {
+						EObject eObjectForNode = objectMap.get(targetNode);
+						graphMap.remove(eObjectForNode, targetNode);
+						objectMap.remove(targetNode, eObjectForNode);
+					}
+					
+				}
+				
 			}
 		}
 		
 		return foundEdge & removedEdge;
+		
 	}
 	
 	/**
