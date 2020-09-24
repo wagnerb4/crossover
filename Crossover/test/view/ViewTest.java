@@ -1919,11 +1919,76 @@ class ViewTest {
 	// reduce(EObject)
 	
 	/**
-	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject)}.
+	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject)} with 
+	 * parameters from a different model.
 	 */
 	@Test
-	final void testReduceEObject() {
-		fail("Not yet implemented"); // TODO
+	final void testReduceEObjectDifferentModel() {
+		
+		EClass workitemEClass = getEClassFromResource(SCRUM_PLANNIG_ECORE, "WorkItem")[0];
+		EClass namedElement = getEClassFromResource(CRA_ECORE, "NamedElement")[0];
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("2"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("5")
+		);
+		
+		EObject method2EObject = mapOfSets.get(0).iterator().next();
+		EObject attribute5EObject = mapOfSets.get(1).iterator().next();
+		
+		testReduceEObjectEmptyView (method2EObject);
+		
+		testReduceEObjectEmptyView (attribute5EObject);
+		
+		testReduceEObjectDifferentModelNonEmptyView (workitemEClass, method2EObject);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		testReduceEObjectDifferentModelNonEmptyView (workitemEClass, attribute5EObject);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		testReduceEObjectDifferentModelNonEmptyView (workitemEClass, attribute5EObject);
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject)}.
+	 * Tries to reduce an empty {@link View} this should always fail and change nothing.
+	 * @param eObject an {@link EObject eObject} to try to reduce by
+	 */
+	private void testReduceEObjectEmptyView (EObject eObject) {
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.reduce(eObject));
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.graphMap.isEmpty());
+		assertTrue(viewOnScrumPlanningInstanceOne.objectMap.isEmpty());
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#reduce(org.eclipse.emf.ecore.EObject)}.
+	 * Extends the {@link View} by the given {@link EObject eClassToExtend} and then tries
+	 * to reduce by the given {@link EObject eObjectToReduce}. The reducing should not work,
+	 * as the {@link EObject eObjectToReduce} is not from the {@code SCRUM_PLANNIG_INSTANCE_ONE} model.
+	 * @param eClassToExtend an {@link EClass eClass} from the {@code SCRUM_PLANNIG_ECORE} meta-model
+	 * @param eObjectToReduce an {@link EObject eObject} that is not from the {@code SCRUM_PLANNIG_INSTANCE_ONE} model
+	 */
+	private void testReduceEObjectDifferentModelNonEmptyView (EClass eClassToExtend, EObject eObjectToReduce) {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.extend(eClassToExtend));
+		
+		List<Node> expectedNodes = new ArrayList<>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.reduce(eObjectToReduce));
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertTrue(viewOnScrumPlanningInstanceOne.graph.getEdges().isEmpty());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		
 	}
 
 	// reduce(EObject, EObject, EReference)
