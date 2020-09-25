@@ -452,8 +452,10 @@ public class View {
 		
 		View copyOfView = new View(resource);
 		
-		Graph copyOfGraph = new GraphImpl(graph.getName());
-		copyOfGraph.getNodes().addAll(graph.getNodes());
+		Graph copyOfGraph = new GraphImpl();
+		graph.getNodes().forEach(node -> {
+			copyOfGraph.getNodes().add(node);
+		});
 		copyOfGraph.getEdges().addAll(graph.getEdges());
 		copyOfView.graph = copyOfGraph;
 		
