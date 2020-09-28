@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -27,9 +28,9 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.henshin.model.Edge;
 import org.eclipse.emf.henshin.model.Node;
+import org.eclipse.emf.henshin.model.impl.GraphImpl;
 import org.eclipse.emf.henshin.model.impl.NodeImpl;
 import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
 import org.junit.jupiter.api.AfterEach;
@@ -2456,10 +2457,57 @@ class ViewTest {
 	}
 	
 	/**
-	 * Test method for {@link view.View#copy()}.
+	 * Test method for {@link view.View#copy()} on an empty {@link View}.
 	 */
 	@Test
-	final void testCopy() {
+	final void testCopyEmptyView() {
+		
+		// test copy of empty view
+		View copyOfView = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(copyOfView == viewOnScrumPlanningInstanceOne);
+		assertTrue(copyOfView.graphMap.isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.graphMap == copyOfView.graphMap);
+		assertTrue(copyOfView.objectMap.isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.objectMap == copyOfView.objectMap);
+		assertFalse(viewOnScrumPlanningInstanceOne.graph == copyOfView.graph);
+		assertTrue(copyOfView.graph.getNodes().isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.graph.getNodes() == copyOfView.graph.getNodes());
+		assertTrue(copyOfView.graph.getEdges().isEmpty());
+		assertFalse(viewOnScrumPlanningInstanceOne.graph.getEdges() == copyOfView.graph.getEdges());
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#copy()} on an empty {@link View}.
+	 * Changing the copied view shouldn't change the original one.
+	 * @param objects a list of {@link EObject eObjects}, {@link EClass eClasses} and {@link EReference eReferences} to extend the view by
+	 */
+	private void testCopyChangeView(Object... objects) {
+		
+		View copyOfView = viewOnScrumPlanningInstanceOne.copy();
+		
+		List<Node> expectedNodes = new ArrayList<Node>(copyOfView.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(copyOfView.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(copyOfView.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(copyOfView.objectMap.values());
+		
+		for (EObject eObject : expectedObjectMapSet) {
+			viewOnScrumPlanningInstanceOne.extend(eObject);
+		}
+		
+		assertEquals(expectedNodes, copyOfView.graph.getNodes());
+		assertEquals(expectedEdges, copyOfView.graph.getEdges());
+		assertEquals(expectedGraphMapSet, copyOfView.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(copyOfView.objectMap.values()));
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#copy()} on a non-empty {@link View}.
+	 */
+	@Test
+	final void testCopyNonEmpty() {
 		
 		// get the Stakeholder and Backlog EClass from the metamodel
 		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
@@ -2470,54 +2518,43 @@ class ViewTest {
 		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
 		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
 		
-		// test copy of empty view
-		View copyOfView = viewOnScrumPlanningInstanceOne.copy();
-		
-		assertFalse(copyOfView == viewOnScrumPlanningInstanceOne);
-		assertEquals(viewOnScrumPlanningInstanceOne.graphMap, copyOfView.graphMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.graphMap == copyOfView.graphMap);
-		assertEquals(viewOnScrumPlanningInstanceOne.objectMap, copyOfView.objectMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.objectMap == copyOfView.objectMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.graph == copyOfView.graph);
-		assertEquals(new HashSet<>(viewOnScrumPlanningInstanceOne.graph.getNodes()), new HashSet<>(copyOfView.graph.getNodes()));
-		assertFalse(viewOnScrumPlanningInstanceOne.graph.getNodes() == copyOfView.graph.getNodes());
-		assertEquals(new HashSet<>(viewOnScrumPlanningInstanceOne.graph.getEdges()), new HashSet<>(copyOfView.graph.getEdges()));
-		assertFalse(viewOnScrumPlanningInstanceOne.graph.getEdges() == copyOfView.graph.getEdges());
-		
-		// changing one view shouldn't change the other
-		
-		List<Node> expectedNodes = new ArrayList<Node>(copyOfView.graph.getNodes());
-		List<Edge> expectedEdges = new ArrayList<Edge>(copyOfView.graph.getEdges());
-		Set<EObject> expectedGraphMapSet = new HashSet<>(copyOfView.graphMap.keySet());
-		Set<EObject> expectedObjectMapSet = new HashSet<>(copyOfView.objectMap.values());
-		
-		viewOnScrumPlanningInstanceOne.extend(workitem);
-		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
-		
-		assertEquals(expectedNodes, copyOfView.graph.getNodes());
-		assertEquals(expectedEdges, copyOfView.graph.getEdges());
-		assertEquals(expectedGraphMapSet, copyOfView.graphMap.keySet());
-		assertEquals(expectedObjectMapSet, new HashSet<>(copyOfView.objectMap.values()));
-		
+		testCopyChangeView (workitem, stakeholder);
+		// note how the viewOnScrumPlanningInstanceOne is not cleared
+		testCopyChangeView (backlogWorkitems);
 		viewOnScrumPlanningInstanceOne.clear();
 		
-		// test copy of non-empty view
-		
+		// nodes and edges
 		viewOnScrumPlanningInstanceOne.extend(stakeholder);
 		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		copiedViewEqualsOriginalView(viewOnScrumPlanningInstanceOne.copy());
 		
-		copyOfView = viewOnScrumPlanningInstanceOne.copy();
+		// nodes only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		copiedViewEqualsOriginalView(viewOnScrumPlanningInstanceOne.copy());
 		
-		assertFalse(copyOfView == viewOnScrumPlanningInstanceOne);
-		assertEquals(viewOnScrumPlanningInstanceOne.graphMap, copyOfView.graphMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.graphMap == copyOfView.graphMap);
-		assertEquals(viewOnScrumPlanningInstanceOne.objectMap, copyOfView.objectMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.objectMap == copyOfView.objectMap);
-		assertFalse(viewOnScrumPlanningInstanceOne.graph == copyOfView.graph);
-		assertEquals(new HashSet<>(viewOnScrumPlanningInstanceOne.graph.getNodes()), new HashSet<>(copyOfView.graph.getNodes()));
-		assertFalse(viewOnScrumPlanningInstanceOne.graph.getNodes() == copyOfView.graph.getNodes());
-		assertEquals(new HashSet<>(viewOnScrumPlanningInstanceOne.graph.getEdges()), new HashSet<>(copyOfView.graph.getEdges()));
-		assertFalse(viewOnScrumPlanningInstanceOne.graph.getEdges() == copyOfView.graph.getEdges());
+		// edges only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		copiedViewEqualsOriginalView(viewOnScrumPlanningInstanceOne.copy());
+		
+	}
+
+	/**
+	 * Helper method for the testing of {@link view.View#copy()}.
+	 * Tests if the {@link View finalCopyOfView} is eqal to the {@link View viewOnScrumPlanningInstanceOne}.
+	 * @param finalCopyOfView
+	 */
+	private void copiedViewEqualsOriginalView(View finalCopyOfView) {
+		
+		assertFalse(finalCopyOfView == viewOnScrumPlanningInstanceOne);
+		assertFalse(viewOnScrumPlanningInstanceOne.graphMap == finalCopyOfView.graphMap);
+		assertFalse(viewOnScrumPlanningInstanceOne.objectMap == finalCopyOfView.objectMap);
+		assertFalse(viewOnScrumPlanningInstanceOne.graph == finalCopyOfView.graph);
+		assertFalse(viewOnScrumPlanningInstanceOne.graph.getNodes() == finalCopyOfView.graph.getNodes());
+		assertFalse(viewOnScrumPlanningInstanceOne.graph.getEdges() == finalCopyOfView.graph.getEdges());
+
+		assertTrue(viewOnScrumPlanningInstanceOne.equals(finalCopyOfView));
 		
 	}
 
@@ -2526,15 +2563,277 @@ class ViewTest {
 	 */
 	@Test
 	final void testClear() {
-		fail("Not yet implemented"); // TODO
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
+				SCRUM_PLANNIG_INSTANCE_ONE, 
+				eObject -> eObject.eClass().getName().equals("Backlog"),
+				eObject -> eObject.eClass().getName().equals("WorkItem"),
+				eObject -> eObject.eClass().getName().equals("Stakeholder")
+		);
+		
+		EObject backlogEObject = mapOfSets.get(0).iterator().next();
+		
+		EObject[] workitemEObjects = mapOfSets.get(1).toArray(new EObject[0]);
+		
+		EObject[] stakeholderEObjects = mapOfSets.get(2).toArray(new EObject[0]);
+		EObject stakeholderOne = stakeholderEObjects[0];
+		EObject stakeholderTwo = stakeholderEObjects[1];
+		
+		EReference stakeholderWorkitemsEReference = getEReferenceFromEClass(stakeholderOne.eClass(), "workitems");
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEObject.eClass(), "workitems");
+		
+		// test on empty view
+		viewOnScrumPlanningInstanceOne.clear();
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		
+		// test on view with nodes only
+		viewOnScrumPlanningInstanceOne.extend(backlogEObject);
+		viewOnScrumPlanningInstanceOne.extend(workitemEObjects[0]);
+		viewOnScrumPlanningInstanceOne.clear();
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		
+		// test on view with edges only
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		
+		// test on view with both edges and nodes
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOne);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwo);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.clear();
+		assertTrue(viewOnScrumPlanningInstanceOne.isEmpty());
+		
 	}
 
 	/**
 	 * Test method for {@link view.View#union(view.View)}.
+	 * This methods tests the union method on non-empty view.
 	 */
 	@Test
-	final void testUnion() {
-		fail("Not yet implemented"); // TODO
+	final void testUnionWithNonEmptyView () {
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		View viewOne = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		View viewTwo = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		// nodes only
+		
+		viewOne.extend(backlog);
+		viewTwo.extend(workitem);
+		
+		View copyOfViewOne = viewOne.copy();
+		
+		testUnionWithNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testUnionWithNonEmptyView(viewTwo, copyOfViewOne);
+		
+		viewOne.clear();
+		viewTwo.clear();
+		
+		// edges only
+		
+		viewOne.extend(backlogWorkitems);
+		viewTwo.extend(stakeholderWorkitems);
+		
+		copyOfViewOne = viewOne.copy();
+		
+		testUnionWithNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testUnionWithNonEmptyView(viewTwo, copyOfViewOne);
+		
+		viewOne.clear();
+		viewTwo.clear();
+		
+		// nodes and edges
+		
+		viewOne.extend(backlog);
+		viewTwo.extend(workitem);
+		viewOne.extend(backlogWorkitems);
+		viewTwo.extend(stakeholderWorkitems);
+		
+		copyOfViewOne = viewOne.copy();
+		
+		testUnionWithNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testUnionWithNonEmptyView(viewTwo, copyOfViewOne);
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#union(view.View)}.
+	 * This methods tests the {@link view.View#union(view.View)} method the given {@link View views}.
+	 * @param viewOne a {@link View view} to call the {@link view.View#union(view.View)} method on
+	 * @param viewTwo the {@link View view} to unite with
+	 */
+	private void testUnionWithNonEmptyView (View viewOne, View viewTwo) {
+		
+		Collector<Edge, ?, Set<EObject>> edgeCollectorViewOne = Collectors.flatMapping(
+				edge -> List.of(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget())).stream(), 
+				Collectors.toSet());
+		
+		Collector<Edge, ?, Set<EObject>> edgeCollectorViewTwo = Collectors.flatMapping(
+				edge -> List.of(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget())).stream(), 
+				Collectors.toSet());
+		
+		Set<EObject> expectedNodeEObjectsViewTwo = viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet());
+		Set<EObject> expectedEdgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().collect(edgeCollectorViewTwo);
+		Set<EObject> expectedGraphMapSetViewTwo = new HashSet<>(viewTwo.graphMap.keySet());
+		Set<EObject> expectedObjectMapSetViewTwo = new HashSet<>(viewTwo.objectMap.values());
+		
+		Set<EObject> expectedNodeEObjectsViewOne = viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet());
+		Set<EObject> expectedEdgeEObjectsViewOne = viewOne.graph.getEdges().stream().collect(edgeCollectorViewOne);
+		Set<EObject> expectedGraphMapSetViewOne = new HashSet<>(viewOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSetViewOne = new HashSet<>(viewOne.objectMap.values());
+		
+		try {
+			viewOne.union(viewTwo);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		assertEquals(expectedNodeEObjectsViewTwo, viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet()));
+		assertEquals(expectedEdgeEObjectsViewTwo, viewTwo.graph.getEdges().stream().collect(edgeCollectorViewTwo));
+		assertEquals(expectedGraphMapSetViewTwo, viewTwo.graphMap.keySet());
+		assertEquals(expectedObjectMapSetViewTwo, new HashSet<>(viewTwo.objectMap.values()));
+		
+		expectedNodeEObjectsViewOne.addAll(expectedNodeEObjectsViewTwo);
+		expectedEdgeEObjectsViewOne.addAll(expectedEdgeEObjectsViewTwo);
+		expectedGraphMapSetViewOne.addAll(expectedGraphMapSetViewTwo);
+		expectedObjectMapSetViewOne.addAll(expectedObjectMapSetViewTwo);
+		
+		assertEquals(expectedNodeEObjectsViewOne, viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet()));
+		assertEquals(expectedEdgeEObjectsViewOne, viewOne.graph.getEdges().stream().collect(edgeCollectorViewOne));
+		assertEquals(expectedGraphMapSetViewOne, viewOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSetViewOne, new HashSet<>(viewOne.objectMap.values()));
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#union(view.View)}.
+	 * First unites viewOnScrumPlanningInstanceOne with an empty view with should change nothing
+	 * and then unites the empty view with viewOnScrumPlanningInstanceOne which should make them both equal.
+	 */
+	private void testUnionWithEmptyView() {
+		
+		View viewTwo = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		try {
+			viewOnScrumPlanningInstanceOne.union(viewTwo);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		
+		try {
+			viewTwo.union(viewOnScrumPlanningInstanceOne);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		assertEquals(viewTwo, viewOnScrumPlanningInstanceOne);
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#union(view.View)}.
+	 */
+	@Test
+	final void testUnionEmptyViewAndExceptionRunner() {
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
+				SCRUM_PLANNIG_INSTANCE_ONE, 
+				eObject -> eObject.eClass().getName().equals("Backlog"),
+				eObject -> eObject.eClass().getName().equals("WorkItem"),
+				eObject -> eObject.eClass().getName().equals("Stakeholder")
+		);
+		
+		EObject backlogEObject = mapOfSets.get(0).iterator().next();
+		
+		EObject[] workitemEObjects = mapOfSets.get(1).toArray(new EObject[0]);
+		
+		EObject[] stakeholderEObjects = mapOfSets.get(2).toArray(new EObject[0]);
+		EObject stakeholderOne = stakeholderEObjects[0];
+		EObject stakeholderTwo = stakeholderEObjects[1];
+		
+		EReference stakeholderWorkitemsEReference = getEReferenceFromEClass(stakeholderOne.eClass(), "workitems");
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEObject.eClass(), "workitems");
+		
+		
+		testUnionException("The resources are not identical.", new View(CRA_INSTANCE_ONE));
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOne);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwo);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		testUnionException("The resources are not identical.", new View(CRA_INSTANCE_ONE));
+		
+		// test with empty view
+		testUnionWithEmptyView();
+		
+		// test on view with nodes only
+		viewOnScrumPlanningInstanceOne.extend(backlogEObject);
+		viewOnScrumPlanningInstanceOne.extend(workitemEObjects[0]);
+		testUnionWithEmptyView();
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// test on view with edges only
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitemsEReference);
+		testUnionWithEmptyView();
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// test on view with both edges and nodes
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOne);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwo);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		testUnionWithEmptyView();
+		viewOnScrumPlanningInstanceOne.clear();
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#union(view.View)}.
+	 * @param expectedErrorMessage the expected error message
+	 * @param view the view to unite with
+	 */
+	private void testUnionException(String expectedErrorMessage, View view) {
+		
+		View expectedSavedState = viewOnScrumPlanningInstanceOne.copy();
+		
+		try {
+			viewOnScrumPlanningInstanceOne.union(view);
+			fail();
+		} catch (ViewSetOperationException e) {
+			assertEquals(expectedErrorMessage, e.getMessage());
+			assertEquals(expectedSavedState, e.getSavedState());
+		}
+		
+		viewOnScrumPlanningInstanceOne.clear();
+		
 	}
 
 	/**
@@ -2586,19 +2885,99 @@ class ViewTest {
 	}
 
 	/**
-	 * Test method for {@link java.lang.Object#equals(java.lang.Object)}.
+	 * Test method for {@link java.lang.Object#equals(java.lang.Object)} with objects that are not {@link View views}.
 	 */
+	@SuppressWarnings("unlikely-arg-type")
 	@Test
-	final void testEquals() {
-		fail("Not yet implemented"); // TODO
+	final void testEqualsNotView() {
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.equals(new GraphImpl()));
+		assertFalse(viewOnScrumPlanningInstanceOne.equals(SCRUM_PLANNIG_ECORE));
+		assertFalse(viewOnScrumPlanningInstanceOne.equals("View"));
+		
 	}
-
+	
 	/**
-	 * Test method for {@link java.lang.Object#toString()}.
+	 * Test method for {@link java.lang.Object#equals(java.lang.Object)} on empty {@link View views}.
 	 */
 	@Test
-	final void testToString() {
-		fail("Not yet implemented"); // TODO
+	final void testEqualsEmptyView() {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.equals(new View(viewOnScrumPlanningInstanceOne.getResource())));
+		assertTrue(new View(viewOnScrumPlanningInstanceOne.getResource()).equals(viewOnScrumPlanningInstanceOne));
+		assertFalse(viewOnScrumPlanningInstanceOne.equals(new View(SCRUM_PLANNIG_INSTANCE_TWO)));
+		assertFalse(new View(SCRUM_PLANNIG_INSTANCE_TWO).equals(viewOnScrumPlanningInstanceOne));
+		
+	}
+	
+	/**
+	 * Test method for {@link java.lang.Object#equals(java.lang.Object)} on non-empty {@link View views}.
+	 */
+	@Test
+	final void testEqualsNonEmptyView() {
+		
+		// get the Stakeholder and Backlog EClass from the meta-model
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Backlog", "WorkItem");
+		EClass backlog = eClasses[0];
+		EClass workitem = eClasses[1];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		View copyOfView = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.equals(copyOfView));
+		assertTrue(copyOfView.equals(viewOnScrumPlanningInstanceOne));
+		
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.equals(copyOfView));
+		assertFalse(copyOfView.equals(viewOnScrumPlanningInstanceOne));
+		
+		copyOfView.extend(workitem);
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.equals(copyOfView));
+		assertTrue(copyOfView.equals(viewOnScrumPlanningInstanceOne));
+		
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		copyOfView = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.equals(copyOfView));
+		assertTrue(copyOfView.equals(viewOnScrumPlanningInstanceOne));
+		
+	}
+	
+	/**
+	 * Test method for {@link java.lang.Object#equals(java.lang.Object)} on {@link View views} with dangling edges.
+	 */
+	@Test
+	final void testEqualsDangling() {
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
+				SCRUM_PLANNIG_INSTANCE_ONE, 
+				eObject -> eObject.eClass().getName().equals("Backlog"),
+				eObject -> eObject.eClass().getName().equals("WorkItem"),
+				eObject -> eObject.eClass().getName().equals("Stakeholder")
+		);
+		
+		EObject backlogEObject = mapOfSets.get(0).iterator().next();
+		
+		EObject[] workitemEObjects = mapOfSets.get(1).toArray(new EObject[0]);
+		
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEObject.eClass(), "workitems");
+		
+		View viewOne = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		viewOne.extend(backlogEObject, workitemEObjects[0], backlogWorkitemsEReference);
+		viewOne.extend(backlogEObject);
+		
+		View viewTwo = viewOne.copy();
+		
+		viewOne.extend(workitemEObjects[0]);
+		
+		assertFalse(viewOne.equals(viewTwo));
+		assertFalse(viewTwo.equals(viewOne));
+		
 	}
 
 }

@@ -1,9 +1,11 @@
 package view;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -180,6 +182,7 @@ public class View {
 	 * @return Returns {@code true} if the given {@link EObject} is part of the {@link View#resource resource} <b>but not</b> yet part of the {@link View}.
 	 */
 	public boolean extend(EObject eObject) {
+		
 		// check if the eObject is contained in the resource
 		String uriFragment = resource.getURIFragment(eObject);
 		if (uriFragment == null || uriFragment.isEmpty() || uriFragment.equals("/-1")) return false;
@@ -187,15 +190,22 @@ public class View {
 		// check if the eObject is already part of the view
 		if (contains(eObject)) return false;
 		
-		Node node = new NodeImpl();
-		node.setGraph(graph);
-		node.setType(eObject.eClass());
+		Node node;
 		
-		graphMap.put(eObject, node);
-		objectMap.put(node, eObject);
+		if(graphMap.containsKey(eObject)) {
+			node = graphMap.get(eObject);
+		} else {
+			node = new NodeImpl();
+			node.setGraph(graph);
+			node.setType(eObject.eClass());
+			graphMap.put(eObject, node);
+			objectMap.put(node, eObject);
+		}
+
 		graph.getNodes().add(node);
 		
 		return true;
+		
 	}
 	
 	/**
@@ -344,19 +354,41 @@ public class View {
 	public boolean reduce(EObject eObject) {
 		
 		// check if the eObject is part of the view
-		if(!contains(eObject)) return false;
+		if(!graphMap.containsKey(eObject)) return false;
 		
-		// I don't use the graph.removeNode method, as it automatically removes all of the attached edges
-		graph.getNodes().remove(graphMap.get(eObject));
+		Node node = graphMap.get(eObject);
 		
 		// Only remove the eObject from the maps if no edge needs it
 		boolean existsEdgeWithEObject = graph.getEdges().stream().anyMatch(edge -> objectMap.get(edge.getSource()) == eObject || objectMap.get(edge.getTarget()) == eObject);
-		if(!existsEdgeWithEObject) {
-			objectMap.remove(graphMap.get(eObject));
-			graphMap.remove(eObject);
+		
+		if (contains(node)) {
+			// I don't use the graph.removeNode method, as it automatically removes all of the attached edges
+			graph.getNodes().remove(node);
+			
+			if(!existsEdgeWithEObject) {
+				
+				objectMap.remove(node);
+				graphMap.remove(eObject);
+				
+			}
+			
+			return true;
+		} else {
+			
+			if(!existsEdgeWithEObject) {
+				
+				objectMap.remove(node);
+				graphMap.remove(eObject);
+				return true;
+				
+			} else {
+				
+				return false;
+				
+			}
+			
 		}
 		
-		return true;
 	}
 	
 	/**
@@ -446,22 +478,81 @@ public class View {
 	
 	/**
 	 * @return Returns a copy of this {@link View} containing separate Maps and a 
-	 * separate {@link View#graph graph} but the same {@link Node Nodes} and {@link Edge Edges}.
+	 * separate {@link View#graph graph}.
 	 */
 	public View copy() {
 		
 		View copyOfView = new View(resource);
 		
 		Graph copyOfGraph = new GraphImpl();
-		graph.getNodes().forEach(node -> {
-			copyOfGraph.getNodes().add(node);
-		});
-		copyOfGraph.getEdges().addAll(graph.getEdges());
+		
+		Map<Node, Node> nodeMap = new HashMap<Node, Node>();
+		
+		for (Edge edge : graph.getEdges()) {
+			
+			Edge newEdge = new EdgeImpl();
+			newEdge.setType(edge.getType());
+			
+			if(!nodeMap.containsKey(edge.getSource())) {
+				
+				Node newNode = new NodeImpl();
+				newNode.setType(edge.getSource().getType());
+				newEdge.setSource(newNode);
+				
+				if(graph.getNodes().contains(edge.getSource()))
+					newNode.setGraph(copyOfGraph);
+				
+				copyOfView.graphMap.put(objectMap.get(edge.getSource()), newNode);
+				copyOfView.objectMap.put(newNode, objectMap.get(edge.getSource()));
+				
+				nodeMap.put(edge.getSource(), newNode);
+				
+			} else {
+				
+				newEdge.setSource(nodeMap.get(edge.getSource()));
+				
+			}
+			
+			if(!nodeMap.containsKey(edge.getTarget())) {
+				
+				Node newNode = new NodeImpl();
+				newNode.setType(edge.getTarget().getType());
+				newEdge.setTarget(newNode);
+				
+				if(graph.getNodes().contains(edge.getTarget()))
+					newNode.setGraph(copyOfGraph);
+				
+				copyOfView.graphMap.put(objectMap.get(edge.getTarget()), newNode);
+				copyOfView.objectMap.put(newNode, objectMap.get(edge.getTarget()));
+				
+				nodeMap.put(edge.getTarget(), newNode);
+				
+			} else {
+				
+				newEdge.setTarget(nodeMap.get(edge.getTarget()));
+				
+			}
+			
+			newEdge.setGraph(copyOfGraph);
+			
+		}
+		
+		for (Node node : graph.getNodes()) {
+			if(!nodeMap.containsKey(node)) {
+				
+				Node newNode = new NodeImpl();
+				newNode.setType(node.getType());
+				newNode.setGraph(copyOfGraph);
+				
+				copyOfView.graphMap.put(objectMap.get(node), newNode);
+				copyOfView.objectMap.put(newNode, objectMap.get(node));
+				
+				nodeMap.put(node, newNode);
+				
+			}
+		}
+		
 		copyOfView.graph = copyOfGraph;
-		
-		copyOfView.graphMap.putAll(graphMap);
-		
-		copyOfView.objectMap.putAll(objectMap);
 		
 		return copyOfView;
 		
@@ -514,17 +605,13 @@ public class View {
 			boolean viewContainsEdge = contains(sourceEObject, targetEObject, edge.getType(), true);
 			 
 			if (!viewContainsEdge) {
-				if(sourceEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						sourceEObject.eGet(edge.getType()).equals(targetEObject) && 
-						!extend(sourceEObject, targetEObject, edge.getType())) {
+				boolean successfullyAdded = extend(sourceEObject, targetEObject, edge.getType());
+				
+				if (!successfullyAdded)
+					successfullyAdded = extend(targetEObject, sourceEObject, edge.getType());
+				
+				if(!successfullyAdded)
 					throw new ViewSetOperationException("Cannot add an edge.", savedState);
-				} else if (targetEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						targetEObject.eGet(edge.getType()).equals(sourceEObject) && 
-						!extend(targetEObject, sourceEObject, edge.getType())) {
-					throw new ViewSetOperationException("Cannot add an edge.", savedState);
-				} else {
-					throw new ViewSetOperationException("Cannot add an edge.", savedState);
-				}
 			}
 			
 		}
@@ -786,6 +873,68 @@ public class View {
 		edge = sourceNode.getIncoming(eReference, targetNode);
 		if (edge == null) return false;
 		return contains(edge, isDangling);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		
+		if (!(obj instanceof View)) return false;
+		
+		View view = (View) obj;
+		if (!view.resource.equals(resource)) return false;
+		
+		if(graph.getNodes().size() != view.graph.getNodes().size()) return false;
+		boolean nodesAreEqual = graph.getNodes().stream().
+				map(this::getObject).
+				collect(Collectors.toSet())
+			.equals(
+				view.graph.getNodes().stream().
+				map(view::getObject).
+				collect(Collectors.toSet())
+			);
+		
+		if(!nodesAreEqual) return false;
+		
+		if(graph.getEdges().size() != view.graph.getEdges().size()) return false;
+		
+		Function<? super Edge, ? extends HashSet<EObject>> edgeToEObjectSetThisView = edge -> {
+			HashSet<EObject> hashSet = new HashSet<EObject>();
+			hashSet.add(objectMap.get(edge.getSource()));
+			hashSet.add(objectMap.get(edge.getTarget()));
+			return hashSet;
+		};
+		
+		Function<? super Edge, ? extends HashSet<EObject>> edgeToEObjectSetThatView = edge -> {
+			HashSet<EObject> hashSet = new HashSet<EObject>();
+			hashSet.add(view.objectMap.get(edge.getSource()));
+			hashSet.add(view.objectMap.get(edge.getTarget()));
+			return hashSet;
+		};
+		
+		boolean edgesAreEqual = graph.getEdges().stream().
+					map(edgeToEObjectSetThisView).collect(Collectors.toSet()).
+				equals(
+					view.graph.getEdges().stream().
+					map(edgeToEObjectSetThatView).collect(Collectors.toSet())
+				);
+		
+		if(!edgesAreEqual) return false;
+		
+		List<Node> nodesOfThisView = graph.getNodes();
+		List<Node> nodesOfThatView = view.graph.getNodes();
+		
+		for (Edge edge : graph.getEdges()) {
+			
+			EObject sourceEObject = objectMap.get(edge.getSource());
+			EObject targetEObject = objectMap.get(edge.getTarget());
+			
+			if(nodesOfThisView.contains(edge.getSource()) != nodesOfThatView.contains(view.graphMap.get(sourceEObject))) return false;
+			if(nodesOfThisView.contains(edge.getTarget()) != nodesOfThatView.contains(view.graphMap.get(targetEObject))) return false;
+			
+		}
+		
+		return nodesAreEqual & edgesAreEqual;
+		
 	}
 
 }
