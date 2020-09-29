@@ -1,5 +1,6 @@
 package view;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -628,37 +629,29 @@ public class View {
 		
 		View savedState = copy();
 		
-		if (resource != view.resource) throw new ViewSetOperationException("The resources aren't identical.", savedState);
+		if (resource != view.resource) throw new ViewSetOperationException("The resources are not identical.", savedState);
 		
 		// remove all edges contained in this view that are not part of the given view
 		List<Edge> edges = graph.getEdges();
+		List<List<EObject>> toRemove = new ArrayList<List<EObject>>();
 		
 		for (Edge edge : edges) {
-			
 			// find out if the given view contains the edge
-			
 			EObject sourceEObject = objectMap.get(edge.getSource());
 			EObject targetEObject = objectMap.get(edge.getTarget());
 			boolean graphContainsEdge = view.contains(sourceEObject, targetEObject, edge.getType(), true);
 
 			if (!graphContainsEdge) {
-				// remove the edge form this view
-				boolean removedAny = false;
-				
-				if(sourceEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						sourceEObject.eGet(edge.getType()).equals(targetEObject)) {
-					removedAny = true;
-					if(!reduce(sourceEObject, targetEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
-				}
-				
-				if (targetEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						targetEObject.eGet(edge.getType()).equals(sourceEObject)) {
-					removedAny = true;
-					if(!reduce(targetEObject, sourceEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
-				}
-				
-				if(!removedAny) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
+				toRemove.add(List.of(sourceEObject, targetEObject, edge.getType()));
 			}
+		}
+		
+		for (List<EObject> list : toRemove) {
+			// remove the edge form this view
+			boolean removedAny = false;
+			removedAny |= reduce(list.get(0), list.get(1), ((EReference) list.get(2)));
+			removedAny |= reduce(list.get(1), list.get(0), ((EReference) list.get(2)));
+			if(!removedAny) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
 		}
 		
 		// remove all nodes contained in this view that are not part of the given view
@@ -682,7 +675,7 @@ public class View {
 		
 		View savedState = copy();
 		
-		if (resource != view.resource) throw new ViewSetOperationException("The resources aren't identical.", savedState);
+		if (resource != view.resource) throw new ViewSetOperationException("The resources are not identical.", savedState);
 		
 		// remove all edges contained in the given view that are part of this view from this view
 		List<Edge> edges = view.graph.getEdges();
