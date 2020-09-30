@@ -221,7 +221,6 @@ class ViewTest {
 	
 	/**
 	 * A helper method to get {@link EObject eObjects} form a {@link Resource resource}.
-	 * If for any predicate no matching {@link EObject eObjects} are found the test that called this method will fail.
 	 * @param resource the {@link Resource} of the model
 	 * @param predicates a list of predicates for evaluating the {@link EObject eObjects} to be returned 
 	 * @return Returns a list of sets containing the {@link EObject eObjects} matched by the given predicates.
@@ -251,7 +250,8 @@ class ViewTest {
 		}
 		
 		for (int i = 0; i < predicates.length; i++) {
-			assertNotNull(eObjectSets.get(i));
+			if (eObjectSets.get(i) == null)
+				eObjectSets.put(i, new HashSet<EObject>());
 		}
 		
 		return eObjectSets;
@@ -3487,7 +3487,7 @@ class ViewTest {
 		
 	}
 	
-	// remove dangling
+	// removeDangling
 	
 	/**
 	 * Test method for {@link view.View#removeDangling()}.
@@ -3505,24 +3505,24 @@ class ViewTest {
 		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
 		
 		// empty view
-		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		checkRemoveDangling(viewOnScrumPlanningInstanceOne);
 		
 		// nodes only
 		viewOnScrumPlanningInstanceOne.extend(stakeholder);
 		viewOnScrumPlanningInstanceOne.extend(backlog);
-		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		checkRemoveDangling(viewOnScrumPlanningInstanceOne);
 		
 		// edges only
 		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
 		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
-		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		checkRemoveDangling(viewOnScrumPlanningInstanceOne);
 		
 		// nodes and edges
 		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
 		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
 		viewOnScrumPlanningInstanceOne.extend(backlog);
 		viewOnScrumPlanningInstanceOne.extend(workitem);
-		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		checkRemoveDangling(viewOnScrumPlanningInstanceOne);
 		
 	}
 
@@ -3532,7 +3532,7 @@ class ViewTest {
 	 * and all dangling edges have been removed. <b> Also clears the view afterwards. </b>
 	 * @param view the {@link View view} to check
 	 */
-	private void checkViewNotDangling (View view) {
+	private void checkRemoveDangling (View view) {
 		
 		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
 		Set<Edge> expectedEdges = view.graph.getEdges().stream().filter(edge -> view.contains(edge, false)).collect(Collectors.toSet());
@@ -3547,31 +3547,435 @@ class ViewTest {
 		view.clear();
 		
 	}
+
+	// completeDangling
 	
 	/**
 	 * Test method for {@link view.View#completeDangling()}.
 	 */
 	@Test
 	final void testCompleteDangling() {
-		fail("Not yet implemented"); // TODO
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		// empty view
+		checkCompleteDangling(viewOnScrumPlanningInstanceOne);
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		checkCompleteDangling(viewOnScrumPlanningInstanceOne);
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		checkCompleteDangling(viewOnScrumPlanningInstanceOne);
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		checkCompleteDangling(viewOnScrumPlanningInstanceOne);
+		
 	}
+	
+	/**
+	 * This methods calls the {@link view.View#completeDangling()} method on the
+	 * given {@link View view}, checks if the edges and maps have not been altered
+	 * and all edges' nodes are contained in the graph. <b> Also clears the view afterwards. </b>
+	 * @param view the {@link View view} to check
+	 */
+	private void checkCompleteDangling (View view) {
+		
+		List<Edge> expectedEdges = view.graph.getEdges();
+		Set<Node> expectedGraphMapNodes = new HashSet<>(view.graphMap.values());
+		Set<Node> expectedObjectMapNodes = view.objectMap.keySet();
+		
+		view.completeDangling();
 
+		assertEquals(expectedEdges, view.graph.getEdges());
+		assertEquals(expectedGraphMapNodes, new HashSet<>(view.graphMap.values()));
+		assertEquals(expectedObjectMapNodes, view.objectMap.keySet());
+		
+		Set<Edge> actualEdges = view.graph.getEdges().stream().filter(edge -> view.contains(edge, false)).collect(Collectors.toSet());
+		
+		assertEquals(new HashSet<>(expectedEdges), actualEdges);
+		
+		view.clear();
+		
+	}
+	
+	// extendByMissingEdges
+	
 	/**
 	 * Test method for {@link view.View#extendByMissingEdges()}.
 	 */
 	@Test
 	final void testExtendByMissingEdges() {
-		fail("Not yet implemented"); // TODO
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		// empty view
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		testExtendByMissingEdgesCompleteEdges(viewOnScrumPlanningInstanceOne);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// incomplete
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_ONE, 
+				eObject -> eObject.eClass().getName().equals("Backlog"),
+				eObject -> eObject.eClass().getName().equals("Stakeholder"));
+		EObject backlogEObject = mapOfSets.get(0).iterator().next();
+		EObject[] stakeholderEObjects = mapOfSets.get(1).toArray(new EObject[] {});
+		EObject stakeholderOneEObject = stakeholderEObjects[0];
+		EObject stakeholderTwoEObject = stakeholderEObjects[1];
+		
+		@SuppressWarnings("unchecked")
+		EList<EObject> referencedBacklogWorkitemEObjects = (EList<EObject>) backlogEObject.eGet(backlogWorkitems);
+		@SuppressWarnings("unchecked")
+		EList<EObject> referencedStakeholderOneWorkitemEObjects = (EList<EObject>) stakeholderOneEObject.eGet(stakeholderWorkitems);
+		@SuppressWarnings("unchecked")
+		EList<EObject> referencedStakeholderTwoWorkitemEObjects = (EList<EObject>) stakeholderTwoEObject.eGet(stakeholderWorkitems);
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOneEObject);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(referencedBacklogWorkitemEObjects.get(0));
+		viewOnScrumPlanningInstanceOne.extend(referencedBacklogWorkitemEObjects.get(3));
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems, stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwoEObject);
+		viewOnScrumPlanningInstanceOne.extend(referencedStakeholderTwoWorkitemEObjects.get(0));
+		viewOnScrumPlanningInstanceOne.extend(referencedStakeholderOneWorkitemEObjects.get(1));
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems, stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems, stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(referencedBacklogWorkitemEObjects.get(2));
+		viewOnScrumPlanningInstanceOne.extend(referencedBacklogWorkitemEObjects.get(1));
+		viewOnScrumPlanningInstanceOne.extend(backlog, referencedBacklogWorkitemEObjects.get(2), backlogWorkitems);
+		testExtendByMissingEdgesIncompleteEdges(viewOnScrumPlanningInstanceOne, backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.clear();
+		
+	}
+	
+	/**
+	 * Tests if calling the {@link view.View#extendByMissingEdges()} method
+	 * on the given {@link View view} changes it. 
+	 * @param view a {@link View view} with all possible edges inserted
+	 */
+	public void testExtendByMissingEdgesCompleteEdges (View view) {
+		
+		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(view.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(view.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(view.objectMap.values());
+		
+		view.extendByMissingEdges();
+
+		assertEquals(expectedNodes, view.graph.getNodes());
+		assertEquals(expectedEdges, view.graph.getEdges());
+		assertEquals(expectedGraphMapSet, view.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(view.objectMap.values()));
+		
+	}
+	
+	/**
+	 * Tests if calling the {@link view.View#extendByMissingEdges()} method alters the
+	 * {@link Node nodes} or the maps. Furthermore checks if the given {@link View view}
+	 * contains all required edges with the given {@link Edge#getType() edge-types}.
+	 * 
+	 * @param view a {@link View view} with missing edges
+	 * @param eReferences an array of all {@link Edge#getType() edge-types} the view
+	 * should contain after calling the method 
+	 */
+	public void testExtendByMissingEdgesIncompleteEdges (View view, EReference... eReferences) {
+		
+		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(view.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(view.objectMap.values());
+		
+		view.extendByMissingEdges();
+
+		assertEquals(expectedNodes, view.graph.getNodes());
+		assertEquals(expectedGraphMapSet, view.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(view.objectMap.values()));
+		
+		List<EReference> edgeTypes = List.of(eReferences);
+		List<Edge> actualEdges = view.graph.getEdges().stream().filter(edge -> edgeTypes.contains(edge.getType())).collect(Collectors.toList());
+		
+		// get all possible edges with the given types from the meta-model
+		List<List<EObject>> allPossibleEdges = new ArrayList<List<EObject>>();
+		
+		for (EReference eReference : edgeTypes) {
+			EObject[] containingEObjects = getEObjectsFromResource(view.resource, eReference.getEContainingClass()::equals).get(0).toArray(new EObject[0]);
+			for (EObject eObject : containingEObjects) {
+				Object object = eObject.eGet(eReference);
+				if(object instanceof EObject) {
+					allPossibleEdges.add(List.of(eObject, ((EObject) object), eReference));
+				} else {
+					for (Object referencedEObject : ((List<?>) object)) {
+						allPossibleEdges.add(List.of(eObject, ((EObject) referencedEObject), eReference));
+					}
+				}
+			}
+		}
+		
+		// remove the actualEdges from allPossibleEdges
+		List<List<EObject>> inResourceRemainingEdges = allPossibleEdges.stream().filter(list -> {
+			boolean existsEdgeInActualEdges = false;
+			for (Edge edge : actualEdges) {
+				EObject sourceEObject = view.objectMap.get(edge.getSource());
+				EObject targetEObject = view.objectMap.get(edge.getTarget());
+				if (edge.getType().equals(list.get(2)) && ( 
+						(sourceEObject.equals(list.get(0)) && targetEObject.equals(list.get(1))) || 
+						(sourceEObject.equals(list.get(1)) && targetEObject.equals(list.get(0))) 
+					)
+				) {
+					existsEdgeInActualEdges = true;
+					break;
+				}	
+			}
+			return !existsEdgeInActualEdges;
+		}).collect(Collectors.toList());
+		
+		// all of the inResourceRemainingEdges must have at least one end that is not in the view
+		for (List<EObject> list : inResourceRemainingEdges) {
+			assertTrue(!view.contains(list.get(0)) || !view.contains(list.get(1)));
+		}
+		
+	}
+	
+	// matchViewByMetamodel
+
+	/**
+	 * Test method for {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
+	 * with a wrong meta-model as the input parameter.
+	 */
+	@Test
+	final void testMatchViewByMetamodelWrongParameters() {
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass workitem = eClasses[2];
+		
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		
+		// empty view
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_ECORE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		
+		// non-empty view
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_ECORE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		
+		// empty view
+		View viewOnCRAInstanceOne = new View(CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_ECORE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		
+		// non-empty view
+		viewOnCRAInstanceOne.extend(namedElement);
+		viewOnCRAInstanceOne.extend(classEClass);
+		viewOnCRAInstanceOne.extend(encapsulates);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_ECORE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		
+	}
+	
+	/**
+	 * Calls the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)} method
+	 * on the given {@link View view} with the given {@link Resource metamodel} and expects it to return false.
+	 * Also checks if the view was modified by the method.
+	 * @param view the {@link View view} to call the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)} method on
+	 * @param metamodel the {@link Resource metamodel} to use as a parameter
+	 */
+	private void assertMatchViewByMetamodelWrongParameters (View view, Resource metamodel) {
+		
+		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(view.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(view.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(view.objectMap.values());
+		
+		assertFalse(view.matchViewByMetamodel(metamodel));
+
+		assertEquals(expectedNodes, view.graph.getNodes());
+		assertEquals(expectedEdges, view.graph.getEdges());
+		assertEquals(expectedGraphMapSet, view.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(view.objectMap.values()));
+		
 	}
 
 	/**
-	 * Test method for {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}.
+	 * Test method for {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
+	 * with the complete meta-model as the input parameter.
 	 */
 	@Test
-	final void testMatchViewByMetamodel() {
-		fail("Not yet implemented"); // TODO
+	final void testMatchViewByMetamodelFullMetamodel() {
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		// empty view
+		assertMatchViewByMetamodel();
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		assertMatchViewByMetamodel();
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		assertMatchViewByMetamodel();
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		assertMatchViewByMetamodel();
+		
 	}
-
+	
+	/**
+	 * Calls the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
+	 * method on the {@code viewOnScrumPlanningInstanceOne} with the {@code SCRUM_PLANNIG_ECORE}
+	 * and asserts that all elements have been inserted. 
+	 * <b>Also {@link View#clear() clears} the {@link View view} at the end.</b>
+	 */
+	private void assertMatchViewByMetamodel () {
+		
+		assertTrue(viewOnScrumPlanningInstanceOne.matchViewByMetamodel(SCRUM_PLANNIG_ECORE));
+		
+		// manually create a full view and assert their equal
+		
+		View fullView = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Plan", "Stakeholder", "Backlog", "WorkItem", "Sprint");
+		
+		for (EClass eClass : eClasses) {
+			fullView.extend(eClass);
+			for (EReference eReference : eClass.getEAllReferences()) {
+				fullView.extend(eReference);
+			}
+		}
+		
+		assertTrue(fullView.equals(viewOnScrumPlanningInstanceOne));
+		
+		viewOnScrumPlanningInstanceOne.clear();
+		
+	}
+		
+	// end: matchViewByMetamodel
+	
 	/**
 	 * Test method for {@link java.lang.Object#equals(java.lang.Object)} with objects that are not {@link View views}.
 	 */

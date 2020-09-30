@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -773,13 +774,15 @@ public class View {
 				Object object = eObject.eGet(eReference);
 				
 				if(object instanceof EObject) {
-					extend(eObject, ((EObject) object), eReference);
+					if(contains(eObject) && contains((EObject) object))
+						extend(eObject, ((EObject) object), eReference);
 				} else if (object != null) {
 					@SuppressWarnings("unchecked") // see EObject#eGet(EStructuralFeature)
 					EList<EObject> eListOfEObjects = (EList<EObject>) object;
 					
 					for (EObject referencedEObject : eListOfEObjects) {
-						extend(eObject, referencedEObject, eReference);
+						if(contains(eObject) && contains(referencedEObject))
+							extend(eObject, referencedEObject, eReference);
 					}
 				}
 			}
@@ -795,7 +798,6 @@ public class View {
 	 */
 	public boolean matchViewByMetamodel(Resource metamodel) {
 		
-		clear();
 		EList<EObject> contets = metamodel.getContents();
 		
 		if (!contets.isEmpty()) {
@@ -805,15 +807,30 @@ public class View {
 				EPackage ePackage = (EPackage) contets.get(0);
 				EList<EClassifier> classifiers = ePackage.getEClassifiers();
 				
+				Set<EClass> eClasses = classifiers.stream().
+						filter(classifier -> classifier instanceof EClass).
+						map(classifier -> (EClass) classifier).
+						collect(Collectors.toSet());
+				
+				TreeIterator<EObject> treeIterator = resource.getAllContents();
+				
+				while (treeIterator.hasNext()) {
+					EObject eObject = (EObject) treeIterator.next();
+					if(!eClasses.contains(eObject.eClass()))
+						return false; // the meta-model does not match the resource 
+				}
+				
+				clear();
+				
 				for (EClassifier eClassifier : classifiers) {
-					if (classifiers instanceof EClass) {
-						extend(eClassifier);
+					if (eClassifier instanceof EClass) {
+						extend(((EClass) eClassifier));
 						((EClass) eClassifier).getEReferences().forEach(this::extend);
 					}
 				}
 				
 				return true;
-	
+				
 			} else {
 				return false;
 			}
@@ -866,11 +883,22 @@ public class View {
 		if(!graphMap.containsKey(sourceEObject) || !graphMap.containsKey(targetEObject)) return false;
 		Node sourceNode = graphMap.get(sourceEObject);
 		Node targetNode = graphMap.get(targetEObject);
-		Edge edge = sourceNode.getOutgoing(eReference, targetNode);
-		if(edge != null) return contains(edge, isDangling);
-		edge = sourceNode.getIncoming(eReference, targetNode);
-		if (edge == null) return false;
-		return contains(edge, isDangling);
+		Edge foundEdge = null;
+		
+		for (Edge edge : graph.getEdges()) {
+			if(edge.getSource() == sourceNode && edge.getTarget() == targetNode) {
+				foundEdge = edge;
+				break;
+			}
+			
+			if(edge.getSource() == targetNode && edge.getTarget() == sourceNode) {
+				foundEdge = edge;
+				break;
+			}
+		}
+		
+		if (foundEdge == null) return false;
+		return contains(foundEdge, isDangling);
 	}
 
 	@Override
