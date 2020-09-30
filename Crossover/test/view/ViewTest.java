@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -2722,13 +2721,8 @@ class ViewTest {
 	 */
 	private void testUnionCommutativity (View viewOne, View viewTwo) {
 		
-		Collector<Edge, ?, Set<EObject>> edgeCollectorViewOne = Collectors.flatMapping(
-				edge -> List.of(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget())).stream(), 
-				Collectors.toSet());
-		
-		Collector<Edge, ?, Set<EObject>> edgeCollectorViewTwo = Collectors.flatMapping(
-				edge -> List.of(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget())).stream(), 
-				Collectors.toSet());
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewTwoEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget()));
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewOneEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget()));
 		
 		View copyOfViewOne = viewOne.copy();
 		
@@ -2739,7 +2733,7 @@ class ViewTest {
 		}
 		
 		Set<EObject> nodeEObjectsViewOne = viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet());
-		Set<EObject> edgeEObjectsViewOne = viewOne.graph.getEdges().stream().collect(edgeCollectorViewOne);
+		Set<Entry<EObject, EObject>> edgeEObjectsViewOne = viewOne.graph.getEdges().stream().map(viewOneEdgeMapper).collect(Collectors.toSet());
 		Set<EObject> graphMapSetViewOne = new HashSet<>(viewOne.graphMap.keySet());
 		Set<EObject> objectMapSetViewOne = new HashSet<>(viewOne.objectMap.values());
 		
@@ -2750,7 +2744,7 @@ class ViewTest {
 		}
 		
 		Set<EObject> nodeEObjectsViewTwo = viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet());
-		Set<EObject> edgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().collect(edgeCollectorViewTwo);
+		Set<Entry<EObject, EObject>> edgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().map(viewTwoEdgeMapper).collect(Collectors.toSet());
 		Set<EObject> graphMapSetViewTwo = new HashSet<>(viewTwo.graphMap.keySet());
 		Set<EObject> objectMapSetViewTwo = new HashSet<>(viewTwo.objectMap.values());
 		
@@ -2998,6 +2992,23 @@ class ViewTest {
 		viewOne.clear();
 		viewTwo.clear();
 		
+		viewOne.extend(backlog);
+		viewTwo.extend(workitem);
+		viewOne.extend(backlogWorkitems);
+		viewOne.extend(stakeholderWorkitems);
+		viewTwo.extend(stakeholderWorkitems);
+		
+		copyOfViewOne = viewOne.copy();
+		
+		testIntersectWithNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testIntersectWithNonEmptyView(viewTwo, copyOfViewOne);
+		
+		viewOne.clear();
+		viewTwo.clear();
+		
 		// nodes only
 		
 		viewOne.extend(backlog);
@@ -3037,13 +3048,8 @@ class ViewTest {
 	 */
 	private void testIntersectCommutativity (View viewOne, View viewTwo) {
 		
-		Collector<Edge, ?, Set<EObject>> edgeCollectorViewOne = Collectors.flatMapping(
-				edge -> List.of(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget())).stream(), 
-				Collectors.toSet());
-		
-		Collector<Edge, ?, Set<EObject>> edgeCollectorViewTwo = Collectors.flatMapping(
-				edge -> List.of(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget())).stream(), 
-				Collectors.toSet());
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewTwoEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget()));
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewOneEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget()));
 		
 		View copyOfViewOne = viewOne.copy();
 		
@@ -3054,7 +3060,7 @@ class ViewTest {
 		}
 		
 		Set<EObject> nodeEObjectsViewOne = viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet());
-		Set<EObject> edgeEObjectsViewOne = viewOne.graph.getEdges().stream().collect(edgeCollectorViewOne);
+		Set<Entry<EObject, EObject>> edgeEObjectsViewOne = viewOne.graph.getEdges().stream().map(viewOneEdgeMapper).collect(Collectors.toSet());
 		Set<EObject> graphMapSetViewOne = new HashSet<>(viewOne.graphMap.keySet());
 		Set<EObject> objectMapSetViewOne = new HashSet<>(viewOne.objectMap.values());
 		
@@ -3065,7 +3071,7 @@ class ViewTest {
 		}
 		
 		Set<EObject> nodeEObjectsViewTwo = viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet());
-		Set<EObject> edgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().collect(edgeCollectorViewTwo);
+		Set<Entry<EObject, EObject>> edgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().map(viewTwoEdgeMapper).collect(Collectors.toSet());
 		Set<EObject> graphMapSetViewTwo = new HashSet<>(viewTwo.graphMap.keySet());
 		Set<EObject> objectMapSetViewTwo = new HashSet<>(viewTwo.objectMap.values());
 		
@@ -3247,20 +3253,301 @@ class ViewTest {
 	
 	/**
 	 * Test method for {@link view.View#subtract(view.View)}.
+	 * This methods tests the subtract method on a non-empty view.
 	 */
 	@Test
-	final void testSubtract() {
-		fail("Not yet implemented"); // TODO
+	final void testSubtractNonEmptyView () {
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		View viewOne = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		View viewTwo = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		// nodes only
+		
+		viewOne.extend(backlog);
+		viewTwo.extend(workitem);
+		
+		View copyOfViewOne = viewOne.copy();
+		
+		testSubtractNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testSubtractNonEmptyView(viewTwo, copyOfViewOne);
+		
+		viewOne.clear();
+		viewTwo.clear();
+		
+		// edges only
+		
+		viewOne.extend(backlogWorkitems);
+		viewTwo.extend(stakeholderWorkitems);
+		
+		copyOfViewOne = viewOne.copy();
+		
+		testSubtractNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testSubtractNonEmptyView(viewTwo, copyOfViewOne);
+		
+		viewOne.clear();
+		viewTwo.clear();
+		
+		// nodes and edges
+		
+		viewOne.extend(backlog);
+		viewTwo.extend(workitem);
+		viewOne.extend(backlogWorkitems);
+		viewOne.extend(stakeholderWorkitems);
+		viewTwo.extend(stakeholderWorkitems);
+		
+		copyOfViewOne = viewOne.copy();
+		
+		testSubtractNonEmptyView(viewOne, viewTwo);
+		
+		viewOne = copyOfViewOne;
+		
+		testSubtractNonEmptyView(viewTwo, copyOfViewOne);
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#subtract(view.View)}.
+	 * This methods tests the {@link view.View#subtract(view.View)} method for the given {@link View views}.
+	 * @param viewOne a {@link View view} to call the {@link view.View#subtract(view.View)} method on
+	 * @param viewTwo the {@link View view} to subtract
+	 */
+	private void testSubtractNonEmptyView (View viewOne, View viewTwo) {
+		
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewTwoEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewTwo.objectMap.get(edge.getSource()), viewTwo.objectMap.get(edge.getTarget()));
+		Function<? super Edge, ? extends SimpleEntry<EObject, EObject>> viewOneEdgeMapper = edge -> new SimpleEntry<EObject, EObject>(viewOne.objectMap.get(edge.getSource()), viewOne.objectMap.get(edge.getTarget()));
+		
+		Set<EObject> expectedNodeEObjectsViewTwo = viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet());
+		Set<Entry<EObject, EObject>> expectedEdgeEObjectsViewTwo = viewTwo.graph.getEdges().stream().
+				map(viewTwoEdgeMapper).
+				collect(Collectors.toSet());
+		Set<EObject> expectedGraphMapSetViewTwo = new HashSet<>(viewTwo.graphMap.keySet());
+		Set<EObject> expectedObjectMapSetViewTwo = new HashSet<>(viewTwo.objectMap.values());
+		
+		Set<EObject> expectedNodeEObjectsViewOne = viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet());
+		Set<Entry<EObject, EObject>> expectedEdgeEObjectsViewOne = viewOne.graph.getEdges().stream().
+				map(viewOneEdgeMapper).
+				collect(Collectors.toSet());
+		
+		try {
+			viewOne.subtract(viewTwo);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		// test if viewTwo has not been altered
+		
+		assertEquals(expectedNodeEObjectsViewTwo, viewTwo.graph.getNodes().stream().map(viewTwo.objectMap::get).collect(Collectors.toSet()));
+		assertEquals(expectedEdgeEObjectsViewTwo, viewTwo.graph.getEdges().stream().map(viewTwoEdgeMapper).collect(Collectors.toSet()));
+		assertEquals(expectedGraphMapSetViewTwo, viewTwo.graphMap.keySet());
+		assertEquals(expectedObjectMapSetViewTwo, new HashSet<>(viewTwo.objectMap.values()));
+		
+		expectedNodeEObjectsViewOne = expectedNodeEObjectsViewOne.stream().filter(eObject -> !expectedNodeEObjectsViewTwo.contains(eObject)).collect(Collectors.toSet());
+		expectedEdgeEObjectsViewOne = expectedEdgeEObjectsViewOne.stream().filter(entry -> !expectedEdgeEObjectsViewTwo.contains(entry)).collect(Collectors.toSet());
+		
+		// test if the nodes and edges of view one are correct
+		
+		assertEquals(expectedNodeEObjectsViewOne, viewOne.graph.getNodes().stream().map(viewOne.objectMap::get).collect(Collectors.toSet()));
+		assertEquals(expectedEdgeEObjectsViewOne, viewOne.graph.getEdges().stream().map(viewOneEdgeMapper).collect(Collectors.toSet()));
+		
+		// test if the maps contain all needed but no useless elements
+		Set<EObject> expectedMapEObjectsViewOne = expectedNodeEObjectsViewOne;
+		expectedEdgeEObjectsViewOne.forEach(entry -> {
+			expectedMapEObjectsViewOne.add(entry.getKey());
+			expectedMapEObjectsViewOne.add(entry.getValue());
+		});
+		
+		assertEquals(expectedMapEObjectsViewOne, viewOne.graphMap.keySet());
+		assertEquals(expectedMapEObjectsViewOne, new HashSet<>(viewOne.objectMap.values()));
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#subtract(view.View)}.
+	 */
+	@Test
+	final void testSubtractEmptyViewAndExceptionRunner() {
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
+				SCRUM_PLANNIG_INSTANCE_ONE, 
+				eObject -> eObject.eClass().getName().equals("Backlog"),
+				eObject -> eObject.eClass().getName().equals("WorkItem"),
+				eObject -> eObject.eClass().getName().equals("Stakeholder")
+		);
+		
+		EObject backlogEObject = mapOfSets.get(0).iterator().next();
+		
+		EObject[] workitemEObjects = mapOfSets.get(1).toArray(new EObject[0]);
+		
+		EObject[] stakeholderEObjects = mapOfSets.get(2).toArray(new EObject[0]);
+		EObject stakeholderOne = stakeholderEObjects[0];
+		EObject stakeholderTwo = stakeholderEObjects[1];
+		
+		EReference stakeholderWorkitemsEReference = getEReferenceFromEClass(stakeholderOne.eClass(), "workitems");
+		EReference backlogWorkitemsEReference = getEReferenceFromEClass(backlogEObject.eClass(), "workitems");
+		
+		
+		testSubtractException("The resources are not identical.", new View(CRA_INSTANCE_ONE));
+		
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOne);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwo);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		testSubtractException("The resources are not identical.", new View(CRA_INSTANCE_ONE));
+		
+		// test with empty view
+		testSubtractEmptyView();
+		
+		// test on view with nodes only
+		viewOnScrumPlanningInstanceOne.extend(backlogEObject);
+		viewOnScrumPlanningInstanceOne.extend(workitemEObjects[0]);
+		testSubtractEmptyView();
+		
+		// test on view with edges only
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitemsEReference);
+		testSubtractEmptyView();
+		
+		// test on view with both edges and nodes
+		viewOnScrumPlanningInstanceOne.extend(stakeholderOne);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderTwo);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitemsEReference);
+		testSubtractEmptyView();
+		
 	}
 
+	/**
+	 * Test method for {@link view.View#subtract(view.View)}.
+	 * First subtracts an empty view from viewOnScrumPlanningInstanceOne, which should not change the viewOnScrumPlanningInstanceOne
+	 * and then subtracts viewOnScrumPlanningInstanceOne from an empty view, which should not change the empty view.
+	 */
+	private void testSubtractEmptyView() {
+		
+		View viewTwo = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		List<Node> expectedNodes = new ArrayList<Node>(viewOnScrumPlanningInstanceOne.graph.getNodes());
+		List<Edge> expectedEdges = new ArrayList<Edge>(viewOnScrumPlanningInstanceOne.graph.getEdges());
+		Set<EObject> expectedGraphMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		Set<EObject> expectedObjectMapSet = new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values());
+		
+		try {
+			viewOnScrumPlanningInstanceOne.subtract(viewTwo);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		assertEquals(expectedNodes, viewOnScrumPlanningInstanceOne.graph.getNodes());
+		assertEquals(expectedEdges, viewOnScrumPlanningInstanceOne.graph.getEdges());
+		assertEquals(expectedGraphMapSet, viewOnScrumPlanningInstanceOne.graphMap.keySet());
+		assertEquals(expectedObjectMapSet, new HashSet<>(viewOnScrumPlanningInstanceOne.objectMap.values()));
+		
+		try {
+			viewTwo.subtract(viewOnScrumPlanningInstanceOne);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		assertTrue(viewTwo.isEmpty());
+		assertTrue(viewTwo.graphMap.isEmpty());
+		assertTrue(viewTwo.objectMap.isEmpty());
+		
+	}
+	
+	/**
+	 * Test method for {@link view.View#subtract(view.View)}.
+	 * @param expectedErrorMessage the expected error message
+	 * @param view the view to subtract
+	 */
+	private void testSubtractException(String expectedErrorMessage, View view) {
+		
+		View expectedSavedState = viewOnScrumPlanningInstanceOne.copy();
+		
+		try {
+			viewOnScrumPlanningInstanceOne.subtract(view);
+			fail();
+		} catch (ViewSetOperationException e) {
+			assertEquals(expectedErrorMessage, e.getMessage());
+			assertEquals(expectedSavedState, e.getSavedState());
+		}
+		
+		viewOnScrumPlanningInstanceOne.clear();
+		
+	}
+	
+	// remove dangling
+	
 	/**
 	 * Test method for {@link view.View#removeDangling()}.
 	 */
 	@Test
 	final void testRemoveDangling() {
-		fail("Not yet implemented"); // TODO
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		
+		// empty view
+		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(backlog);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		checkViewNotDangling(viewOnScrumPlanningInstanceOne);
+		
 	}
 
+	/**
+	 * This methods calls the {@link view.View#removeDangling()} method on the
+	 * given {@link View view}, checks if the nodes have not been altered the maps are correct
+	 * and all dangling edges have been removed. <b> Also clears the view afterwards. </b>
+	 * @param view the {@link View view} to check
+	 */
+	private void checkViewNotDangling (View view) {
+		
+		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
+		Set<Edge> expectedEdges = view.graph.getEdges().stream().filter(edge -> view.contains(edge, false)).collect(Collectors.toSet());
+		
+		view.removeDangling();
+
+		assertEquals(expectedNodes, view.graph.getNodes());
+		assertEquals(new HashSet<>(expectedNodes), new HashSet<>(view.graphMap.values()));
+		assertEquals(new HashSet<>(expectedNodes), view.objectMap.keySet());
+		assertEquals(expectedEdges, new HashSet<Edge>(view.graph.getEdges()));
+		
+		view.clear();
+		
+	}
+	
 	/**
 	 * Test method for {@link view.View#completeDangling()}.
 	 */

@@ -690,19 +690,8 @@ public class View {
 			if(graphContainsEdge) {
 				// remove the edge form this view
 				boolean removedAny = false;
-				
-				if(sourceEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						sourceEObject.eGet(edge.getType()).equals(targetEObject)) {
-					removedAny = true;
-					if(!reduce(sourceEObject, targetEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
-				}
-				
-				if (targetEObject.eClass().getEAllReferences().contains(edge.getType()) && 
-						targetEObject.eGet(edge.getType()).equals(sourceEObject)) {
-					removedAny = true;
-					if(!reduce(targetEObject, sourceEObject, edge.getType())) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
-				}
-				
+				removedAny |= reduce(sourceEObject, targetEObject, edge.getType());
+				removedAny |= reduce(targetEObject, sourceEObject, edge.getType());
 				if(!removedAny) throw new ViewSetOperationException("Cannot remove an edge.", savedState);
 			}
 			
@@ -725,10 +714,26 @@ public class View {
 	 */
 	public void removeDangling() {
 		
+		List<Edge> toRemove = new ArrayList<>();
+		
 		for (Edge edge : graph.getEdges()) {
 			boolean edgeIsDangling = !graph.getNodes().contains(edge.getSource()) || !graph.getNodes().contains(edge.getTarget());
 			if (edgeIsDangling) {
-				graph.removeEdge(edge);
+				toRemove.add(edge);
+			}
+		}
+		
+		for (Edge edge : toRemove) {
+			graph.getEdges().remove(edge);
+			
+			if (!graph.getNodes().contains(edge.getSource())) {
+				EObject eObject = objectMap.remove(edge.getSource());
+				graphMap.remove(eObject);
+			}
+			
+			if (!graph.getNodes().contains(edge.getTarget())) {
+				EObject eObject = objectMap.remove(edge.getTarget());
+				graphMap.remove(eObject);
 			}
 		}
 		
