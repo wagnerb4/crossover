@@ -33,6 +33,10 @@ public class ViewFactory {
 	
 	/**
 	 * Builds the graphs of the given Views based on the given {@code classes} and {@code references}.
+	 * The {@link View views} should have different {@link View#resource resources} on the same meta-model.
+	 * The given {@link EClass classes} and {@link EReference references} define the problem part of the {@link View views}.
+	 * Thus the parts of the {@link View#resource resources} in the given {@link View views} that are defined by the given
+	 * given {@link EClass classes} and {@link EReference references} should be the same.
 	 * @param viewOne first empty {@link View}
 	 * @param viewTwo second empty {@link View}
 	 * @param classes of the meta-model to buld the views from
@@ -56,7 +60,9 @@ public class ViewFactory {
 		// find an isomorphism
 		
 		Rule rule = new RuleImpl();
-		rule.setLhs(viewTwo.graph);
+		rule.setLhs(viewOne.graph);
+		rule.setCheckDangling(false);
+		rule.setInjectiveMatching(true);
 		EGraph eGraph = new EGraphImpl(viewTwo.resource.getContents().get(0));
 		Engine engine = new EngineImpl();
 		

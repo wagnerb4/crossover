@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ASCII"?>
+<scrumPlanning:Plan
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:scrumPlanning="http://www.example.org/scrumPlanning"
+    xsi:schemaLocation="http://www.example.org/scrumPlanning scrumPlanning.ecore">
+  <sprints committedItem="//@backlog/@workitems.1 //@backlog/@workitems.0"/>
+  <backlog>
+    <workitems
+        Importance="1"
+        Effort="1"
+        stakeholder="//@stakeholders.0"
+        isPlannedFor="//@sprints.0"/>
+    <workitems
+        stakeholder="//@stakeholders.0"
+        isPlannedFor="//@sprints.0"/>
+  </backlog>
+  <stakeholders
+      workitems="//@backlog/@workitems.0 //@backlog/@workitems.1"/>
+</scrumPlanning:Plan>
