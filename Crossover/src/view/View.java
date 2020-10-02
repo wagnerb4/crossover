@@ -82,7 +82,7 @@ public class View {
 	/**
 	 * @return Returns the {@link View#resource resource}.
 	 */
-	Resource getResource() {
+	public Resource getResource() {
 		return resource;
 	}
 	
@@ -105,6 +105,20 @@ public class View {
 			int randomIndex = (int) (Math.random() * nodes.size());
 			return nodes.get(randomIndex);
 		}
+	}
+	
+	/**
+	 * @return Returns the {@link View#graph}.
+	 */
+	public Graph getGraph () {
+		return graph;
+	}
+	
+	/**
+	 * @return Returns the {@link Node nodes} from the {@link View view's} {@link View#graph graph}.
+	 */
+	public List<Node> getNodes () {
+		return graph.getNodes();
 	}
 	
 	/**

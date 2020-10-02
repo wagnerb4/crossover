@@ -7,9 +7,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
-import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.InternalEObject;
+import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
 import org.eclipse.emf.henshin.interpreter.EGraph;
 import org.eclipse.emf.henshin.interpreter.Engine;
 import org.eclipse.emf.henshin.interpreter.Match;
@@ -22,12 +27,13 @@ import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
 
+import crossover.Pair;
+
 /**
  * 
  * A utility class for working with {@link View}s
  * 
  * @author Benjamin Wagner
- * 
  */
 public class ViewFactory {
 	
@@ -157,13 +163,75 @@ public class ViewFactory {
 		return false;
 	}
 	
-	public static Resource createResourceFromView (View view) {
-		return null;
+	/**
+	 * Create an {@link EGraph eGraph} from the given {@link View view}.
+	 * The {@link EGraph eGraph} will contain copies of the {@link EObject eObjects} of
+	 * the {@link View view's} {@link View#resource resource}. The {@link EGraph eGraph}
+	 * will only contain such {@link EObject eObjects} that are contained by the given {@link View view}.
+	 * Also the {@link EObject eObjects} referenced by the  {@link EObject eObjects} in the {@link EGraph eGraph}
+	 * will comply to the {@link Edge edges} of the {@link View#graph}.
+	 * @param view The {@link View view} to create an {@link EGraph eGraph} of
+	 * @return Returns an {@link EGraph eGraph} as described above and a map from the original {@link EObject eObjects}
+	 * to the copied ones.
+	 */
+	public static Pair<EGraph, Map<EObject, EObject>> createEGraphFromView (View view) {
+		
+		TreeIterator<EObject> iterator = view.resource.getAllContents();
+		Map<EObject, EObject> copies = new HashMap<>();
+		
+	    Copier copier = new Copier();
+	    
+	    while (iterator.hasNext()) {
+			Object object = (Object) iterator.next();
+			
+			if(object instanceof EObject) {
+				EObject originalEObject = (EObject) object;
+				EObject copiedEObject = copier.copy(originalEObject);
+				copies.put(originalEObject, copiedEObject);
+			}
+			
+		}
+	    
+	    copier.copyReferences();
+	    
+	    EGraph eGraph = new EGraphImpl(copies.values());
+	    
+	    List<EObject> toRemove = eGraph.stream().filter(eObject -> !view.contains(eObject)).collect(Collectors.toList());
+	    
+	    for (EObject eObject : toRemove) {
+			eGraph.remove(eObject);
+			copies.remove(eObject);
+		}
+	    
+	    for (EObject eObject : eGraph) {
+	    	List<EReference> eReferences = eObject.eClass().getEAllReferences();
+	    	for (EReference eReference : eReferences) {
+	    		EStructuralFeature.Setting setting = ((InternalEObject)eObject).eSetting(eReference);
+				Object object = eObject.eGet(eReference);
+				if (object instanceof EObject) {
+					if (!view.contains(eObject, (EObject) object, eReference, false)) {
+						setting.unset();
+					}
+				} else {
+					@SuppressWarnings("unchecked")
+					EList<EObject> eObjects = (EList<EObject>) object;
+					for (EObject referencedEObject : eObjects) {
+						if (!view.contains(eObject, referencedEObject, eReference, false)) {
+							setting.unset();
+						}
+					}
+				}
+			}
+		}
+	    
+		return new Pair<EGraph, Map<EObject,EObject>>(eGraph, copies);
+		
 	}
 	
 	public static View doDFS (View view, Node node) {
 		return null;
 	}
+	
 	
 	public static Iterator<View> getSubGraphIterator (View view) {
 		return null;
