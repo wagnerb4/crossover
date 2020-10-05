@@ -151,7 +151,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		this.intersectionOfSSETwo = splitOfSSETwo.getFirst().copy();
 		this.intersectionOfSSETwo.intersect(splitOfSSETwo.getSecond());
 		
-		if (this.intersectionOfSSETwo.getNodes().size() < this.intersectionOfSSEOne.getNodes().size()) {
+		if (this.intersectionOfSSETwo.getGraph().getNodes().size() < this.intersectionOfSSEOne.getGraph().getNodes().size()) {
 			
 			// switch references
 			View tempView;

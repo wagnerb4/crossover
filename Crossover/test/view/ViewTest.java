@@ -3610,37 +3610,57 @@ class ViewTest extends ViewPackageTest {
 		EClass classEClass = eClasses[1];
 		
 		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+
+		View viewOnCRAEcore = new View(CRA_ECORE);
+		viewOnCRAEcore.extendByAllNodes();
+		viewOnCRAEcore.extendByMissingEdges();
+		
+		View viewOnCRAInstanceOne = new View(CRA_INSTANCE_ONE);
+		viewOnCRAInstanceOne.extendByAllNodes();
+		viewOnCRAInstanceOne.extendByMissingEdges();
+		
+		View viewOnScrumPlanningEcore = new View(SCRUM_PLANNIG_ECORE);
+		viewOnScrumPlanningEcore.extendByAllNodes();
+		viewOnScrumPlanningEcore.extendByMissingEdges();
+		
+		View viewOnScrumPlanningInstanceOne = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		viewOnScrumPlanningInstanceOne.extendByAllNodes();
+		viewOnScrumPlanningInstanceOne.extendByMissingEdges();
+		
+		View viewOnScrumPlanningInstanceTwo = new View(SCRUM_PLANNIG_INSTANCE_TWO);
+		viewOnScrumPlanningInstanceTwo.extendByAllNodes();
+		viewOnScrumPlanningInstanceTwo.extendByMissingEdges();
 		
 		// empty view
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_ECORE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnCRAEcore);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnCRAInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnScrumPlanningInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnScrumPlanningInstanceTwo);
 		
 		// non-empty view
 		viewOnScrumPlanningInstanceOne.extend(stakeholder);
 		viewOnScrumPlanningInstanceOne.extend(workitem);
 		viewOnScrumPlanningInstanceOne.extend(stakeholderWorkitems);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_ECORE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, CRA_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnCRAEcore);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnCRAInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnScrumPlanningInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnScrumPlanningInstanceOne, viewOnScrumPlanningInstanceTwo);
 		
 		// empty view
-		View viewOnCRAInstanceOne = new View(CRA_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_ECORE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, CRA_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		View viewOnCRAInstanceOneFirstParam = new View(CRA_INSTANCE_ONE);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningEcore);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnCRAInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningInstanceTwo);
 		
 		// non-empty view
-		viewOnCRAInstanceOne.extend(namedElement);
-		viewOnCRAInstanceOne.extend(classEClass);
-		viewOnCRAInstanceOne.extend(encapsulates);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_ECORE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, CRA_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_ONE);
-		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOne, SCRUM_PLANNIG_INSTANCE_TWO);
+		viewOnCRAInstanceOneFirstParam.extend(namedElement);
+		viewOnCRAInstanceOneFirstParam.extend(classEClass);
+		viewOnCRAInstanceOneFirstParam.extend(encapsulates);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningEcore);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnCRAInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningInstanceOne);
+		assertMatchViewByMetamodelWrongParameters(viewOnCRAInstanceOneFirstParam, viewOnScrumPlanningInstanceTwo);
 		
 	}
 	
@@ -3651,14 +3671,14 @@ class ViewTest extends ViewPackageTest {
 	 * @param view the {@link View view} to call the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)} method on
 	 * @param metamodel the {@link Resource metamodel} to use as a parameter
 	 */
-	private void assertMatchViewByMetamodelWrongParameters (View view, Resource metamodel) {
+	private void assertMatchViewByMetamodelWrongParameters (View view, View metamodelView) {
 		
 		List<Node> expectedNodes = new ArrayList<Node>(view.graph.getNodes());
 		List<Edge> expectedEdges = new ArrayList<Edge>(view.graph.getEdges());
 		Set<EObject> expectedGraphMapSet = new HashSet<>(view.graphMap.keySet());
 		Set<EObject> expectedObjectMapSet = new HashSet<>(view.objectMap.values());
 		
-		assertFalse(view.matchViewByMetamodel(metamodel));
+		assertFalse(view.matchViewByMetamodel(metamodelView));
 
 		assertEquals(expectedNodes, view.graph.getNodes());
 		assertEquals(expectedEdges, view.graph.getEdges());
@@ -3706,15 +3726,20 @@ class ViewTest extends ViewPackageTest {
 	
 	/**
 	 * Calls the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
-	 * method on the {@code viewOnScrumPlanningInstanceOne} with the {@code SCRUM_PLANNIG_ECORE}
+	 * method on the {@code viewOnScrumPlanningInstanceOne} with a full @li {@link View view} on the {@code SCRUM_PLANNIG_ECORE}
 	 * and asserts that all elements have been inserted. 
 	 * <b>Also {@link View#clear() clears} the {@link View view} at the end.</b>
 	 */
 	private void assertMatchViewByMetamodel () {
 		
-		assertTrue(viewOnScrumPlanningInstanceOne.matchViewByMetamodel(SCRUM_PLANNIG_ECORE));
+		// create a view on the SCRUM_PLANNIG_ECORE and fill it.
+		View scrumPlanningMetamodelView = new View(SCRUM_PLANNIG_ECORE);
+		scrumPlanningMetamodelView.extendByAllNodes();
+		scrumPlanningMetamodelView.extendByMissingEdges();
 		
-		// manually create a full view and assert their equal
+		assertTrue(viewOnScrumPlanningInstanceOne.matchViewByMetamodel(scrumPlanningMetamodelView));
+		
+		// manually create a full view and assert they are equal
 		
 		View fullView = new View(SCRUM_PLANNIG_INSTANCE_ONE);
 		
@@ -3732,7 +3757,83 @@ class ViewTest extends ViewPackageTest {
 		viewOnScrumPlanningInstanceOne.clear();
 		
 	}
+
+	/**
+	 * Test method for {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
+	 * with a partial meta-model as the input parameter.
+	 */
+	@Test
+	final void testMatchViewByMetamodelPartialMetamodel () {
 		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Plan");
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[3];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		EReference planBacklog = getEReferenceFromEClass(plan, "backlog");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		View viewOnScrumPlanningEcore = new View(SCRUM_PLANNIG_ECORE);
+		viewOnScrumPlanningEcore.extend(((EObject) stakeholder));
+		viewOnScrumPlanningEcore.extend(((EObject) backlog));
+		viewOnScrumPlanningEcore.extend(((EObject) workitem));
+		viewOnScrumPlanningEcore.extend(((EObject) backlogWorkitems));
+		viewOnScrumPlanningEcore.extend(((EObject) stakeholderWorkitems));
+		
+		View viewToCompare = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		viewToCompare.extend(stakeholder);
+		viewToCompare.extend(backlog);
+		viewToCompare.extend(workitem);
+		viewToCompare.extend(backlogWorkitems);
+		viewToCompare.extend(stakeholderWorkitems);
+		
+		View viewToMatch = new View(SCRUM_PLANNIG_INSTANCE_ONE);
+		
+		// empty view
+		assertViewMatchesGiven(viewToMatch, viewOnScrumPlanningEcore, viewToCompare);
+		
+		// nodes only
+		viewToMatch.extend(backlog);
+		viewToMatch.extend(plan);
+		assertViewMatchesGiven(viewToMatch, viewOnScrumPlanningEcore, viewToCompare);
+		
+		// edges only
+		viewToMatch.extend(planBacklog);
+		viewToMatch.extend(planStakeholders);
+		viewToMatch.extend(stakeholderWorkitems);
+		assertViewMatchesGiven(viewToMatch, viewOnScrumPlanningEcore, viewToCompare);
+		
+		// nodes and edges
+		viewToMatch.extend(backlog);
+		viewToMatch.extend(plan);
+		viewToMatch.extend(planBacklog);
+		viewToMatch.extend(planStakeholders);
+		viewToMatch.extend(stakeholderWorkitems);
+		assertViewMatchesGiven(viewToMatch, viewOnScrumPlanningEcore, viewToCompare);
+		
+	}
+	
+	/**
+	 * Calls the {@link view.View#matchViewByMetamodel(org.eclipse.emf.ecore.resource.Resource)}
+	 * method on the {@link View viewToMatch} with the given {@link View metaModelView} and expects
+	 * it to be equal to the {@link View viewToCompare} afterwards.
+	 * <b>Also {@link View#clear() clears} the {@link View viewToMatch} at the end.</b>
+	 * @param viewToMatch the {@link View view} to call the method on
+	 * @param metaModelView the {@link View view} to use as the parameter for the method call
+	 * @param viewToCompare the {@link View view} to assert equality to afterwards
+	 */
+	private void assertViewMatchesGiven (View viewToMatch, View metaModelView, View viewToCompare) {
+		
+		assertTrue(viewToMatch.matchViewByMetamodel(metaModelView));
+		assertEquals(viewToCompare, viewToMatch);
+		viewToMatch.clear();
+		
+	}
+	
 	// end: matchViewByMetamodel
 	
 	/**

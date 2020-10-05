@@ -115,13 +115,6 @@ public class View {
 	}
 	
 	/**
-	 * @return Returns the {@link Node nodes} from the {@link View view's} {@link View#graph graph}.
-	 */
-	public List<Node> getNodes () {
-		return graph.getNodes();
-	}
-	
-	/**
 	 * @param node an {@link Node} from the {@link View#graph graph}
 	 * @return Returns the {@link EObject} mapped to the given {@link Node} or {@code null} if the {@link Node} is not part of the {@link View Views} {@link View#graph graph}.
 	 */
@@ -804,18 +797,33 @@ public class View {
 		}
 		
 	}
-		
+	
 	/**
-	 * Reduces the {@link View} by any elements not part of the given {@code metamodel} and extends it by all that are.
-	 * @param metamodel the meta-model or sub-meta-model of the {@link View#resource resource}
-	 * @return Returns {@code true} if the {@link Resource} is a valid meta-model and {@code false} otherwise.
+	 * Adds all {@link EObject eObjects} to the {@link View} that exist the {@link View#resource resource}.
 	 */
-	public boolean matchViewByMetamodel(Resource metamodel) {
+	public void extendByAllNodes() {
 		
-		EList<EObject> contets = metamodel.getContents();
+		TreeIterator<EObject> treeIterator = resource.getAllContents();
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			extend(eObject);
+		}
+		
+	}
+	
+	/**
+	 * Reduces the {@link View} by any elements not part of the given {@link View viewOnMetamodel} and extends it by all that are.
+	 * @param viewOnMetamodel a {@link View view} on the meta-model of the {@link View#resource resource}
+	 * @return Returns {@code true} if the given {@link View viewOnMetamodel} and its {@link Resource resource} represent
+	 * a valid meta-model and {@code false} otherwise. To be valid the {@link View viewOnMetamodel's} {@link Resource resource} 
+	 * has to contain all the {@link EClass eClasses} of this {@link View#resource view's resource}. The given {@link View view}
+	 * itself must not contain any dangling edges.
+	 */
+	public boolean matchViewByMetamodel(View viewOnMetamodel) {
+		
+		List<EObject> contets = viewOnMetamodel.resource.getContents();
 		
 		if (!contets.isEmpty()) {
-			
 			if (contets.get(0) instanceof EPackage) {
 				
 				EPackage ePackage = (EPackage) contets.get(0);
@@ -826,7 +834,7 @@ public class View {
 						map(classifier -> (EClass) classifier).
 						collect(Collectors.toSet());
 				
-				TreeIterator<EObject> treeIterator = resource.getAllContents();
+				TreeIterator<EObject> treeIterator = this.resource.getAllContents();
 				
 				while (treeIterator.hasNext()) {
 					EObject eObject = (EObject) treeIterator.next();
@@ -836,11 +844,12 @@ public class View {
 				
 				clear();
 				
-				for (EClassifier eClassifier : classifiers) {
-					if (eClassifier instanceof EClass) {
-						extend(((EClass) eClassifier));
-						((EClass) eClassifier).getEReferences().forEach(this::extend);
-					}
+				for (Node node : viewOnMetamodel.graph.getNodes()) {
+					EObject eObject = viewOnMetamodel.getObject(node);
+					if (eObject instanceof EClass)
+						extend(((EClass) eObject));
+					if (eObject instanceof EReference)
+						extend(((EReference) eObject));
 				}
 				
 				return true;
