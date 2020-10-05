@@ -131,8 +131,14 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder);
 		this.problemSplitSSETwo = new Pair<View, View> (
-				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, problemPartMappings),
-				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getSecond(), this.problemPartSSETwo, problemPartMappings)
+				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, problemPartMappings.stream().map(mapping -> {
+					mapping.setOrigin(this.problemSplitSSEOne.getFirst().getNode(problemPartSSEOne.getObject(mapping.getOrigin())));
+					return mapping;
+				}).collect(Collectors.toSet())),
+				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getSecond(), this.problemPartSSETwo, problemPartMappings.stream().map(mapping -> {
+					mapping.setOrigin(this.problemSplitSSEOne.getSecond().getNode(problemPartSSEOne.getObject(mapping.getOrigin())));
+					return mapping;
+				}).collect(Collectors.toSet()))
 		);
 		
 		// split the search space elements according to the problem split

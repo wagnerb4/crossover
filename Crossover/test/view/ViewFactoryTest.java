@@ -194,8 +194,51 @@ class ViewFactoryTest extends ViewPackageTest {
 	 * Test method for {@link view.ViewFactory#intersectByMapping(view.View, view.View, java.util.Set)}.
 	 */
 	@Test
-	final void testIntersectByMapping() {
-		fail("Not yet implemented"); // TODO
+	final void testIntersectByMapping () {
+		
+		View viewOnScrumPlanningInstanceThree = new View(SCRUM_PLANNIG_INSTANCE_THREE);
+		View viewOnScrumPlanningInstanceTwo = new View(SCRUM_PLANNIG_INSTANCE_TWO);
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Plan", "Backlog", "Stakeholder", "WorkItem");
+		
+		EClass plan = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass stakeholder = eClasses[2];
+		EClass workitem = eClasses[3];
+		
+		EReference planBacklog = getEReferenceFromEClass(plan, "backlog");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
+		EReference workitemStakeholder = getEReferenceFromEClass(workitem, "stakeholder");
+		
+		List<EClass> eClassesList = List.of(eClasses);
+		List<EReference> eReferencesList = List.of(planBacklog, planStakeholders, backlogWorkitems, stakeholderWorkitems, workitemStakeholder);
+		
+		Set<Mapping> mappings = ViewFactory.buildViewMapping(viewOnScrumPlanningInstanceTwo, viewOnScrumPlanningInstanceThree, eClassesList, eReferencesList);
+		
+		View copyOfViewOnScrumPlanningInstanceTwo = viewOnScrumPlanningInstanceTwo.copy();
+		Set<Mapping> mappingFromCopy = mappings.stream().map(mapping -> {
+			mapping.setOrigin(copyOfViewOnScrumPlanningInstanceTwo.getNode(viewOnScrumPlanningInstanceTwo.getObject(mapping.getOrigin())));
+			return mapping;
+		}).collect(Collectors.toSet());
+		
+		copyOfViewOnScrumPlanningInstanceTwo.reduce(plan);
+		copyOfViewOnScrumPlanningInstanceTwo.removeDangling();
+		
+		View actualView = ViewFactory.intersectByMapping(copyOfViewOnScrumPlanningInstanceTwo, viewOnScrumPlanningInstanceThree, mappingFromCopy);
+		
+		View expectedView = new View(SCRUM_PLANNIG_INSTANCE_THREE);
+		expectedView.extend(backlog);
+		expectedView.extend(stakeholder);
+		expectedView.extend(workitem);
+		expectedView.extend(backlogWorkitems);
+		expectedView.extend(stakeholderWorkitems);
+		expectedView.extend(workitemStakeholder);
+		
+		assertTrue(expectedView.equals(actualView));
+		
 	}
 
 	// IsSubgraph

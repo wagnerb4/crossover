@@ -27,6 +27,7 @@ import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
 
+import crossover.MappingUtil;
 import crossover.Pair;
 
 /**
@@ -98,32 +99,27 @@ public class ViewFactory {
 	 */
 	public static View intersectByMapping (View sourceView, View targetView, Set<Mapping> viewMappings) {
 		
-		// convert the viewMappings to a Map
-		
-		Map<Node, Node> map = new HashMap<Node, Node>();
-		viewMappings.forEach((Mapping mapping) -> map.put(mapping.getImage(), mapping.getOrigin()));
-		
 		// map the nodes from sourceView to nodes from targedView
-		
-		Set<Node> mappedNodes = sourceView.graph.getNodes().stream().map(map::get).
-				filter(node -> node != null). // remove all null values to support partial mappings
+		Set<Node> mappedNodes = sourceView.graph.getNodes().stream()
+				.map(origin -> MappingUtil.getImageSingle(viewMappings, origin)).
+				filter(node -> node != null).
 				collect(Collectors.toSet());
 		
 		// create the new view and reduce it to the mapped nodes
-		
 		View mappedView = targetView.copy();
 		targetView.graph.getNodes().stream().
-			filter(node -> mappedNodes.contains(node)). // only keep nodes that should be removed
+			filter(node -> !mappedNodes.contains(node)). // only keep nodes that should be removed
 			map(targetView::getObject). // get the corresponding  EObjects
 			forEach(mappedView::reduce); // reduce the new view by them
 		
 		// collect all mapped edges
-		
 		Set<Edge> mappedEdges = sourceView.graph.getEdges().stream().map(edge -> {
 			
-			Node mappedSource = map.get(edge.getSource());
-			Node mappedTarget = map.get(edge.getTarget());
+			Node mappedSource = MappingUtil.getImageSingle(viewMappings, edge.getSource());
+			Node mappedTarget = MappingUtil.getImageSingle(viewMappings, edge.getTarget());
 		
+			if (mappedSource == null || mappedTarget == null) return null;
+			
 		    for (Edge outgoingEdge : mappedSource.getOutgoing()) {
 				if (outgoingEdge.getTarget().equals(mappedTarget)) {
 					return outgoingEdge;
@@ -135,7 +131,6 @@ public class ViewFactory {
 		}).filter(node -> node != null).collect(Collectors.toSet());
 		
 		// remove all not-mapped edges from the graph in the mappedView 
-		
 		mappedView.graph.getEdges().stream().filter(edge -> !mappedEdges.contains(edge)).forEach(mappedView.graph::removeEdge);
 		
 		return mappedView;
