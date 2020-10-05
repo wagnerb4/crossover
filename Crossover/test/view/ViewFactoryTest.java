@@ -11,37 +11,25 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.model.Edge;
 import org.eclipse.emf.henshin.model.Mapping;
 import org.eclipse.emf.henshin.model.Node;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import crossover.MappingUtil;
 
 /**
  * @author Benjamin Wagner
  *
  */
 class ViewFactoryTest extends ViewPackageTest {
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@BeforeEach
-	void setUp() throws Exception {
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@AfterEach
-	void tearDown() throws Exception {
-	}
 
 	// BuildViewMapping
 	
@@ -196,9 +184,6 @@ class ViewFactoryTest extends ViewPackageTest {
 	@Test
 	final void testIntersectByMapping () {
 		
-		View viewOnScrumPlanningInstanceThree = new View(SCRUM_PLANNIG_INSTANCE_THREE);
-		View viewOnScrumPlanningInstanceTwo = new View(SCRUM_PLANNIG_INSTANCE_TWO);
-		
 		// get the Stakeholder and Backlog EClass from the metamodel
 		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Plan", "Backlog", "Stakeholder", "WorkItem");
 		
@@ -213,22 +198,6 @@ class ViewFactoryTest extends ViewPackageTest {
 		EReference stakeholderWorkitems = getEReferenceFromEClass(stakeholder, "workitems");
 		EReference workitemStakeholder = getEReferenceFromEClass(workitem, "stakeholder");
 		
-		List<EClass> eClassesList = List.of(eClasses);
-		List<EReference> eReferencesList = List.of(planBacklog, planStakeholders, backlogWorkitems, stakeholderWorkitems, workitemStakeholder);
-		
-		Set<Mapping> mappings = ViewFactory.buildViewMapping(viewOnScrumPlanningInstanceTwo, viewOnScrumPlanningInstanceThree, eClassesList, eReferencesList);
-		
-		View copyOfViewOnScrumPlanningInstanceTwo = viewOnScrumPlanningInstanceTwo.copy();
-		Set<Mapping> mappingFromCopy = mappings.stream().map(mapping -> {
-			mapping.setOrigin(copyOfViewOnScrumPlanningInstanceTwo.getNode(viewOnScrumPlanningInstanceTwo.getObject(mapping.getOrigin())));
-			return mapping;
-		}).collect(Collectors.toSet());
-		
-		copyOfViewOnScrumPlanningInstanceTwo.reduce(plan);
-		copyOfViewOnScrumPlanningInstanceTwo.removeDangling();
-		
-		View actualView = ViewFactory.intersectByMapping(copyOfViewOnScrumPlanningInstanceTwo, viewOnScrumPlanningInstanceThree, mappingFromCopy);
-		
 		View expectedView = new View(SCRUM_PLANNIG_INSTANCE_THREE);
 		expectedView.extend(backlog);
 		expectedView.extend(stakeholder);
@@ -236,6 +205,81 @@ class ViewFactoryTest extends ViewPackageTest {
 		expectedView.extend(backlogWorkitems);
 		expectedView.extend(stakeholderWorkitems);
 		expectedView.extend(workitemStakeholder);
+		
+		createMappingAndTestMethod (
+				SCRUM_PLANNIG_INSTANCE_TWO, 
+				SCRUM_PLANNIG_INSTANCE_THREE, 
+				List.of(eClasses),
+				List.of(planBacklog, planStakeholders, backlogWorkitems, stakeholderWorkitems, workitemStakeholder), 
+				expectedView, view -> {
+					view.reduce(plan);
+					view.removeDangling();
+					return null;
+				}
+		);
+		
+		EObject[] workitemEObjectsInstanceThree = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_THREE, 
+				eObject -> eObject.eClass() == workitem).get(0).toArray(new EObject[0]);
+		
+		EObject[] workitemEObjectsInstanceTwo = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_TWO, 
+				eObject -> eObject.eClass() == workitem).get(0).toArray(new EObject[0]);
+		
+		EObject backlogEObject = getEObjectsFromResource(SCRUM_PLANNIG_INSTANCE_THREE,
+				eObject -> eObject.eClass() == backlog).get(0).iterator().next();
+		
+		expectedView.clear();
+		expectedView.extend(backlog);
+		expectedView.extend(workitemEObjectsInstanceThree[1]);
+		expectedView.extend(backlogEObject, workitemEObjectsInstanceThree[1], backlogWorkitems);
+		
+		createMappingAndTestMethod (
+				SCRUM_PLANNIG_INSTANCE_TWO, 
+				SCRUM_PLANNIG_INSTANCE_THREE, 
+				List.of(backlog, workitem),
+				List.of(backlogWorkitems), 
+				expectedView, view -> {
+					view.reduce(workitemEObjectsInstanceTwo[1]);
+					view.removeDangling();
+					return null;
+				}
+		);
+		
+	}
+
+	/**
+	 * Creates two {@link View views}, one of earch given {@link Resource resource} and initialized them using
+	 * the {@link ViewFactory#buildViewMapping(View, View, List, List) buildViewMapping} method. Then it copies and changes the
+	 * {@link View firstView} ({@link View view} of {@link Resource resourceOne}) with the given {@link Function viewChanger} 
+	 * and uses the {@link view.ViewFactory#intersectByMapping(view.View, view.View, java.util.Set) intersectByMapping}
+	 * method to apply the changes to the {@link View secondView} ({@link View view} of {@link Resource resourceTwo}) 
+	 * and compares the result with the given {@link View expectedView}.
+	 * @param resourceOne first {@link Resource resource} to use, another than {@link Resource resourceTwo}
+	 * @param resourceTwo second {@link Resource resource} to use, another than {@link Resource resourceOne}
+	 * @param eClassesList the {@link EClass eClasses} to use in the {@link ViewFactory#buildViewMapping(View, View, List, List) buildViewMapping} call
+	 * @param eReferencesList the {@link EReference eReferences} to use in the  {@link ViewFactory#buildViewMapping(View, View, List, List) buildViewMapping} call
+	 * @param expectedView the {@link View view} to compare the result with
+	 * @param viewChanger a {@link Funktion funktion} to change the filled and copied {@link View firstView} with.
+	 */
+	private void createMappingAndTestMethod(Resource resourceOne, Resource resourceTwo, List<EClass> eClassesList,
+			List<EReference> eReferencesList, View expectedView, Function<View, ?> viewChanger) {
+		
+		View firstView = new View(resourceOne);
+		View secondView = new View(resourceTwo);
+		
+		Set<Mapping> mappings = ViewFactory.buildViewMapping(firstView, secondView, eClassesList, eReferencesList);
+		
+		View copyOfFirstView = firstView.copy();
+		Set<Mapping> mappingFromCopyOfFirstView = MappingUtil.mapByOrigin(mappings, node -> copyOfFirstView.getNode(firstView.getObject(node)));
+		
+		viewChanger.apply(copyOfFirstView);
+		
+		View expectedCopyOfFirstView = copyOfFirstView.copy();
+		View expectedSecondView = secondView.copy();
+		
+		View actualView = ViewFactory.intersectByMapping(copyOfFirstView, secondView, mappingFromCopyOfFirstView);
+		
+		assertTrue(expectedCopyOfFirstView.equals(copyOfFirstView));
+		assertTrue(expectedSecondView.equals(secondView));
 		
 		assertTrue(expectedView.equals(actualView));
 		
