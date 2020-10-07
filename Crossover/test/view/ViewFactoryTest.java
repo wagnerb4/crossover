@@ -439,16 +439,26 @@ class ViewFactoryTest extends ViewPackageTest {
 			ViewFactory.createEGraphFromView(view);
 			fail("Expected an IllegalArgumentException but none was thrown.");
 		} catch (IllegalArgumentException e) {
-			assertEquals("The view must not contain completely loose edges.", e.getMessage());
+			assertEquals("The view must not contain dangling edges.", e.getMessage());
 			assertTrue(copyOfView.equals(view));
 		}
 		
 		// nodes and edges
 		view.extend(stakeholder);
 		view.extend(workitem);
-		runCreateEGraphFromViewOnView(view);
+		
+		copyOfView = view.copy();
+		
+		try {	
+			ViewFactory.createEGraphFromView(view);
+			fail("Expected an IllegalArgumentException but none was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The view must not contain dangling edges.", e.getMessage());
+			assertTrue(copyOfView.equals(view));
+		}
 		
 		view.extend(backlog);
+		
 		runCreateEGraphFromViewOnView(view);
 		
 	}
@@ -519,7 +529,7 @@ class ViewFactoryTest extends ViewPackageTest {
 	 */
 	private void assertMapContainsAllElements (Map<EObject, EObject> map, EGraph eGraph, View view) {
 		
-		Set<EObject> expectedKeySet = view.graphMap.keySet();
+		Set<EObject> expectedKeySet = view.graph.getNodes().stream().map(view::getObject).collect(Collectors.toSet());
 		Set<EObject> actualKeySet = map.keySet();
 		assertEquals(expectedKeySet, actualKeySet);
 		
@@ -571,8 +581,8 @@ class ViewFactoryTest extends ViewPackageTest {
 		
 		for (Edge edge : view.graph.getEdges()) {
 			
-			EObject sourceEObject = map.get(view.objectMap.get(edge.getSource()));
-			EObject targetEObject = map.get(view.objectMap.get(edge.getTarget()));
+			EObject sourceEObject = map.get(view.getObject(edge.getSource()));
+			EObject targetEObject = map.get(view.getObject(edge.getTarget()));
 			
 			// now there should be an reference between the two eObjects
 			boolean foundReference = false;
@@ -627,17 +637,16 @@ class ViewFactoryTest extends ViewPackageTest {
 				Object object = eObject.eGet(eReference);
 				
 				if (object instanceof EObject) {
-					EObject referencedEObject = (EObject) object;
 					
-					assertTrue(view.contains(mapReversed.get(eObject), mapReversed.get(referencedEObject), eReference, true));
+					EObject referencedEObject = (EObject) object;
+					assertTrue(view.contains(mapReversed.get(eObject), mapReversed.get(referencedEObject), eReference, false));
 					
 				} else if (object != null) {
 					@SuppressWarnings("unchecked")
 					EList<EObject> listOfEObjects = (EList<EObject>) object;
+					
 					for (EObject referencedEObject : listOfEObjects) {
-						
-						assertTrue(view.contains(mapReversed.get(eObject), mapReversed.get(referencedEObject), eReference, true));
-						
+						assertTrue(view.contains(mapReversed.get(eObject), mapReversed.get(referencedEObject), eReference, false));
 					}
 				}
 			}

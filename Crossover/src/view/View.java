@@ -70,9 +70,11 @@ public class View {
 	/**
 	 * Creates a new empty {@link View}.
 	 * @param resource the {@link View#resource resource} to be used for the new {@link View}
+	 * @throws IllegalArgumentException if the {@link Resource resource} {@link Resource#getContents() contains} none or more that
+	 * one root element(s)
 	 */
-	public View(Resource resource) {
-		super();
+	public View(Resource resource) {	
+		if (resource.getContents().size() != 1) throw new IllegalArgumentException("The given resource should only contain one root element.");
 		this.resource = resource;
 		graphMap = new HashMap<EObject, Node>();
 		objectMap = new HashMap<Node, EObject>();

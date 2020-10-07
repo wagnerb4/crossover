@@ -1,7 +1,6 @@
 package view;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -11,14 +10,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
-import org.eclipse.emf.ecore.util.InternalEList;
 import org.eclipse.emf.henshin.interpreter.EGraph;
 import org.eclipse.emf.henshin.interpreter.Engine;
 import org.eclipse.emf.henshin.interpreter.Match;
@@ -172,20 +169,19 @@ public class ViewFactory {
 	 * the {@link View view's} {@link View#resource resource}. The {@link EGraph eGraph}
 	 * will only contain such {@link EObject eObjects} that are contained by the given {@link View view}.
 	 * Also the {@link EObject eObjects} referenced by the  {@link EObject eObjects} in the {@link EGraph eGraph}
-	 * will comply to the {@link Edge edges} of the {@link View#graph}.
-	 * @param view The {@link View view} to create an {@link EGraph eGraph} of
+	 * will comply to the {@link Edge edges} of the {@link View#graph}. The given view must not contain dangling edges.
+	 * @param view the {@link View view} to create an {@link EGraph eGraph} of
 	 * @return Returns an {@link EGraph eGraph} as described above and a map from the original {@link EObject eObjects}
 	 * to the copied ones.
-	 * @throws IllegalArgumentException if the given {@link View view} contains at least one edge without either of the 
-	 * {@link EObject eObjects} represented by its {@link Node nodes} beeing {@link View#contains(Node) contained in} the {@link View view}.
+	 * @throws IllegalArgumentException if the given {@link View view} contains dangling edges
 	 */
 	public static Pair<EGraph, Map<EObject, EObject>> createEGraphFromView (View view) {
 		
 		if(view.isEmpty()) return new Pair<EGraph, Map<EObject,EObject>>(new EGraphImpl(), new HashMap<>());
 		
-		boolean viewContainsACompletelyLooseEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) && !view.contains(edge.getTarget()));
+		boolean viewContainsDanglingEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) || !view.contains(edge.getTarget()));
 		
-		if (viewContainsACompletelyLooseEdge) throw new IllegalArgumentException("The view must not contain completely loose edges.");
+		if (viewContainsDanglingEdge) throw new IllegalArgumentException("The view must not contain dangling edges.");
 		
 	    Copier copier = new Copier(true, false);
 	    
@@ -228,7 +224,7 @@ public class ViewFactory {
 	    		EStructuralFeature.Setting setting = ((InternalEObject)eObject).eSetting(eReference);
 				Object object = eObject.eGet(eReference);
 				if (object instanceof EObject) {
-					if (!view.contains(copiesReversed.get(eObject), copiesReversed.get((EObject) object), eReference, true)) {
+					if (!view.contains(copiesReversed.get(eObject), copiesReversed.get((EObject) object), eReference, false)) {
 						toUnset.add((o) -> {
 							setting.unset();
 							return null;
@@ -238,7 +234,7 @@ public class ViewFactory {
 					@SuppressWarnings("unchecked")
 					EList<EObject> eObjects = (EList<EObject>) object;
 					for (EObject referencedEObject : eObjects) {
-						if (!view.contains(copiesReversed.get(eObject), copiesReversed.get(referencedEObject), eReference, true)) {
+						if (!view.contains(copiesReversed.get(eObject), copiesReversed.get(referencedEObject), eReference, false)) {
 							toUnset.add((o) -> {
 								setting.unset();
 								return null;
@@ -265,93 +261,4 @@ public class ViewFactory {
 		return null;
 	}
 	
-	public static class CustomCopier extends Copier {
-
-		private static final long serialVersionUID = 8226729303009876001L;
-		
-	    /**
-	     * Called to handle the copying of a cross reference;
-	     * this adds values or sets a single value as appropriate for the multiplicity
-	     * while omitting any bidirectional reference that isn't in the copy map.
-	     * @param eReference the reference to copy.
-	     * @param eObject the object from which to copy.
-	     * @param copyEObject the object to copy to.
-	     */
-		@Override
-	    protected void copyReference(EReference eReference, EObject eObject, EObject copyEObject) {
-			
-			if (eObject.eIsSet(eReference)) {
-				
-				EStructuralFeature.Setting setting = getTarget(eReference, eObject, copyEObject);
-				
-				if (setting != null) {
-					
-					Object value = eObject.eGet(eReference, resolveProxies);
-					
-					if (eReference.isMany()) {
-						
-						@SuppressWarnings("unchecked") InternalEList<EObject> source = (InternalEList<EObject>)value;
-						@SuppressWarnings("unchecked") InternalEList<EObject> target = (InternalEList<EObject>)setting;
-						
-	    		  		if (source.isEmpty()) {
-	    		  			
-	    		  			target.clear();
-	    		  			
-	    		  		} else {
-	    		  			
-	    		  			boolean isBidirectional = eReference.getEOpposite() != null;
-	    		  			int index = 0;
-	    		  			
-	    		  			for (Iterator<EObject> k = resolveProxies ? source.iterator() : source.basicIterator(); k.hasNext();) {
-	    		  				
-	    		  				EObject referencedEObject = k.next();
-	    		  				EObject copyReferencedEObject = get(referencedEObject);
-	    		  				if (copyReferencedEObject == null) {
-			  						if (useOriginalReferences && !isBidirectional) {
-			  							target.addUnique(index, referencedEObject);
-			  							++index;
-			  						}
-	    		  				} else {
-	    		  					if (isBidirectional) {
-	    		  						int position = target.indexOf(copyReferencedEObject);
-	    		  						if (position == -1) {
-	    		  							target.addUnique(index, copyReferencedEObject);
-	    		  						} else if (index != position) {
-	    		  							target.move(index, copyReferencedEObject);
-	    		  						}
-	    		  					} else {
-	    		  						target.addUnique(index, copyReferencedEObject);
-	    		  					}
-	    		  					++index;
-	    		  				}
-	    		  				
-	    		  			}
-	    		  			
-	    		  		}
-	    		  		
-	    		  	} else {
-	    		  		
-	    		  		if (value == null) {
-	    		  			
-	    		  			setting.set(null);
-	    		  			
-	    		  		} else {
-	    		  			
-	    		  			Object copyReferencedEObject = get(value);
-	    		  			if (copyReferencedEObject == null) {
-	    		  				if (useOriginalReferences && eReference.getEOpposite() == null) setting.set(value);
-	    		  			} else {
-	    		  				setting.set(copyReferencedEObject);
-	    		  			}
-	    		  			
-	    		  		}
-	    		  		
-	    		  	}
-					
-				}
-				
-			}
-			
-		}
-	}
 }
