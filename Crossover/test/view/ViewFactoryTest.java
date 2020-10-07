@@ -686,13 +686,13 @@ class ViewFactoryTest extends ViewPackageTest {
 		
 		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
 				CRA_INSTANCE_ONE, 
-				eObject -> eObject.eGet(name).equals("1"),
-				eObject -> eObject.eGet(name).equals("2"),
-				eObject -> eObject.eGet(name).equals("3"),
-				eObject -> eObject.eGet(name).equals("4"),
-				eObject -> eObject.eGet(name).equals("5"),
-				eObject -> eObject.eGet(name).equals("8"),
-				eObject -> eObject.eGet(name).equals("9")
+				eObject -> eObject.eGet(name).equals("1"), // 0
+				eObject -> eObject.eGet(name).equals("2"), // 1
+				eObject -> eObject.eGet(name).equals("3"), // 2
+				eObject -> eObject.eGet(name).equals("4"), // 3
+				eObject -> eObject.eGet(name).equals("5"), // 4
+				eObject -> eObject.eGet(name).equals("8"), // 5
+				eObject -> eObject.eGet(name).equals("9") // 6
 		);
 		
 		View view = new View(CRA_INSTANCE_ONE);
@@ -707,10 +707,11 @@ class ViewFactoryTest extends ViewPackageTest {
 		view.extend(methodDataDependency);
 		view.extend(methodFunctionalDependency);
 		view.reduce(mapOfSets.get(0).iterator().next(), mapOfSets.get(4).iterator().next(), classModelFeatures);
+		view.reduce(mapOfSets.get(0).iterator().next(), mapOfSets.get(6).iterator().next(), classModelClasses);
 		
 		View expectedComponentOne = view.copy();
 		expectedComponentOne.reduce(mapOfSets.get(4).iterator().next());
-		expectedComponentOne.reduce(mapOfSets.get(8).iterator().next());
+		expectedComponentOne.reduce(mapOfSets.get(6).iterator().next());
 		expectedComponentOne.removeDangling();
 		View expectedComponentTwo = view.copy();
 		try {

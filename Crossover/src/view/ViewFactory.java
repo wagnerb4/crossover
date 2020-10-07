@@ -2,6 +2,7 @@ package view;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -265,10 +266,40 @@ public class ViewFactory {
 	 * is not part of the {@link View view}
 	 */
 	public static View doDFS (View view, Node node) throws IllegalArgumentException {
+		
 		if(!view.contains(node)) throw new IllegalArgumentException("The node is not part of the view.");
 		boolean viewContainsDanglingEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) || !view.contains(edge.getTarget()));
 		if(viewContainsDanglingEdge) throw new IllegalArgumentException("The view must not contain dangling edges.");
-		return null;
+		
+		Set<Node> visitedNodes = new HashSet<>();
+		internalDoDFS(view, node, visitedNodes);
+		
+		View dfsView = new View(view.resource);
+		
+		for (Node visitedNode : visitedNodes) {
+			dfsView.extend(view.getObject(visitedNode));
+		}
+		
+		dfsView.extendByMissingEdges();
+		
+		return dfsView;
+		
+	}
+	
+	private static void internalDoDFS (View view, Node node, Set<Node> visitedNodes) {
+		
+		visitedNodes.add(node);
+		
+		for (Edge edge : view.graph.getEdges()) {
+			if (edge.getSource() == node) {
+				if(!visitedNodes.contains(edge.getTarget()))
+					internalDoDFS(view, edge.getTarget(), visitedNodes);
+			} else if (edge.getTarget() == node) {
+				if(!visitedNodes.contains(edge.getSource()))
+					internalDoDFS(view, edge.getSource(), visitedNodes);
+			}
+		}
+		
 	}
 	
 	/**
@@ -279,7 +310,7 @@ public class ViewFactory {
 	 * @throws IllegalArgumentException if the given {@link View subgraphView} is not a subgraph
 	 * of the {@link View view} or one of the {@link View views} contain dangling edges.
 	 */
-	public static Iterator<View> getSubGraphIterator (View view, View subgraphView) throws IllegalArgumentException {
+ 	public static Iterator<View> getSubGraphIterator (View view, View subgraphView) throws IllegalArgumentException {
 		
 		if(!ViewFactory.isSubgraph(subgraphView, view)) throw new IllegalArgumentException("The subgraphView must be a subgraph of the view.");
 		boolean viewContainsDanglingEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) || !view.contains(edge.getTarget()));
