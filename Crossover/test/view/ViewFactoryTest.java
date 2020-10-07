@@ -9,7 +9,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.security.interfaces.ECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -746,11 +745,324 @@ class ViewFactoryTest extends ViewPackageTest {
 	// GetSubGraphIterator
 	
 	/**
-	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)}.
+	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)} on an empty view.
 	 */
 	@Test
-	final void testGetSubGraphIterator() {
-		fail("Not yet implemented"); // TODO
+	final void testGetSubGraphIteratorEmptyView() {
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		View copyOfView = view.copy();
+		
+		Iterator<View> subgraphIterator = ViewFactory.getSubGraphIterator(view, view);
+		
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(subgraphIterator.hasNext());
+		assertTrue(view.equals(subgraphIterator.next()));
+		assertFalse(subgraphIterator.hasNext());
+		
+	}
+	
+	/**
+	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)} on
+	 * an non emtpy {@link View view} but with the subgraph beeing the same as the {@link View view}.
+	 */
+	@Test
+	final void testGetSubGraphIteratorNonEmptySameSubgraph() {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Attribute", "Method");
+		EClass classModelEClass = eClasses[1];
+		EClass methodEClass = eClasses[4];
+		
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		// nodes only
+		view.extend(classModelEClass);
+		view.extend(methodEClass);
+		
+		View copyOfView = view.copy();
+		
+		Iterator<View> subgraphIterator = ViewFactory.getSubGraphIterator(view, view);
+		
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(subgraphIterator.hasNext());
+		assertTrue(view.equals(subgraphIterator.next()));
+		assertFalse(subgraphIterator.hasNext());
+		
+		// nodes and edges
+		view.extend(classModelFeatures);
+		view.removeDangling();
+		
+		copyOfView = view.copy();
+		
+		subgraphIterator = ViewFactory.getSubGraphIterator(view, view);
+		
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(subgraphIterator.hasNext());
+		assertTrue(view.equals(subgraphIterator.next()));
+		assertFalse(subgraphIterator.hasNext());
+		
+	}
+	
+	/**
+	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)} with wrong input.
+	 */
+	@Test
+	final void testGetSubGraphIteratorWrongInput() {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Attribute", "Method");
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass methodEClass = eClasses[4];
+		
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(methodEClass);
+		
+		View oversetView = view.copy();
+		oversetView.extend(classModelEClass);
+		
+		View copyOfView = view.copy();
+		View copyOfOVerserView = oversetView.copy();
+		
+		try {
+			ViewFactory.getSubGraphIterator(view, oversetView);
+			fail("Expected an IllegalArgumentException but no was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The subgraphView must be a subgraph of the view.", e.getMessage());
+			assertTrue(copyOfView.equals(view));
+			assertTrue(copyOfOVerserView.equals(oversetView));
+		}
+		
+		view.extend(classModelClasses);
+		copyOfView = view.copy();
+		
+		oversetView.extend(classModelClasses);
+		oversetView.extend(classEClass);
+		copyOfOVerserView = oversetView.copy();
+		
+		try {
+			ViewFactory.getSubGraphIterator(oversetView, view);
+			fail("Expected an IllegalArgumentException but no was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The subgraphView must not contain dangling edges.", e.getMessage());
+			assertTrue(copyOfView.equals(view));
+			assertTrue(copyOfOVerserView.equals(oversetView));
+		}
+		
+		view.reduce(classModelClasses);
+		copyOfView = view.copy();
+		
+		oversetView.reduce(classEClass);
+		copyOfOVerserView = oversetView.copy();
+		
+		try {
+			ViewFactory.getSubGraphIterator(oversetView, view);
+			fail("Expected an IllegalArgumentException but no was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The view must not contain dangling edges.", e.getMessage());
+			assertTrue(copyOfView.equals(view));
+			assertTrue(copyOfOVerserView.equals(oversetView));
+		}
+		
+	}
+
+	/**
+	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)} with nodes only.
+	 */
+	@Test
+	final void testGetSubGraphIteratorNodesOnly () {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		
+		EAttribute name = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("1"), // 0
+				eObject -> eObject.eGet(name).equals("2"), // 1
+				eObject -> eObject.eGet(name).equals("3"), // 2
+				eObject -> eObject.eGet(name).equals("4"), // 3
+				eObject -> eObject.eGet(name).equals("5"), // 4
+				eObject -> eObject.eGet(name).equals("8"), // 5
+				eObject -> eObject.eGet(name).equals("9") // 6
+		);
+		
+		EObject classEObject8 = mapOfSets.get(5).iterator().next();
+		EObject methodEObject2 = mapOfSets.get(1).iterator().next();
+		
+		// nodes only
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(classModelEClass);
+		
+		View subgraphView = view.copy();
+		
+		view.extend(classEObject8);
+		view.extend(methodEObject2);
+		
+		View copyOfView = view.copy();
+		View copyOfSubgraphView = subgraphView.copy();
+		
+		Iterator<View> subgraphIterator = ViewFactory.getSubGraphIterator(view, subgraphView);
+		
+		assertTrue(copyOfView.equals(view));
+		assertTrue(copyOfSubgraphView.equals(subgraphView));
+		
+		Set<View> actualViews = new HashSet<>();
+		int counter = 0;
+		
+		while (subgraphIterator.hasNext()) {
+			View returnedSubgraphView = (View) subgraphIterator.next();
+			assertSubgraphSatisfiesConditions(view, returnedSubgraphView, subgraphView);
+			actualViews.add(returnedSubgraphView);
+			counter++;
+		}
+		
+		assertEquals(counter, actualViews.size());
+		
+		Set<View> expectedViews = new HashSet<>();
+		
+		View tmpView = subgraphView.copy();
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(classEObject8);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(methodEObject2);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.reduce(classEObject8);
+		expectedViews.add(tmpView);
+		
+		assertTrue(expectedViews.equals(actualViews));
+		
+	}
+	
+	/**
+	 * Test method for {@link view.ViewFactory#getSubGraphIterator(view.View)} with nodes and edges.
+	 */
+	@Test
+	final void testGetSubGraphIteratorNodesAndEdges () {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		
+		EAttribute name = getEAttributeFromEClass(namedElementEClass, "name");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("1"), // 0
+				eObject -> eObject.eGet(name).equals("2"), // 1
+				eObject -> eObject.eGet(name).equals("3"), // 2
+				eObject -> eObject.eGet(name).equals("4"), // 3
+				eObject -> eObject.eGet(name).equals("5"), // 4
+				eObject -> eObject.eGet(name).equals("8"), // 5
+				eObject -> eObject.eGet(name).equals("9") // 6
+		);
+		
+		EObject classModelEObject1 = mapOfSets.get(0).iterator().next();
+		EObject classEObject8 = mapOfSets.get(5).iterator().next();
+		EObject methodEObject2 = mapOfSets.get(1).iterator().next();
+		
+		// nodes only
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(classModelEClass);
+		
+		View subgraphView = view.copy();
+		
+		view.extend(classEObject8);
+		view.extend(classModelEObject1, classEObject8, classModelClasses);
+		view.extend(methodEObject2);
+		view.extend(classModelEObject1, methodEObject2, classModelFeatures);
+		
+		View copyOfView = view.copy();
+		View copyOfSubgraphView = subgraphView.copy();
+		
+		Iterator<View> subgraphIterator = ViewFactory.getSubGraphIterator(view, subgraphView);
+		
+		assertTrue(copyOfView.equals(view));
+		assertTrue(copyOfSubgraphView.equals(subgraphView));
+		
+		Set<View> actualViews = new HashSet<>();
+		int counter = 0;
+		
+		while (subgraphIterator.hasNext()) {
+			View returnedSubgraphView = (View) subgraphIterator.next();
+			assertSubgraphSatisfiesConditions(view, returnedSubgraphView, subgraphView);
+			actualViews.add(returnedSubgraphView);
+			counter++;
+		}
+		
+		assertEquals(counter, actualViews.size());
+		
+		Set<View> expectedViews = new HashSet<>();
+		
+		View tmpView = subgraphView.copy();
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(classEObject8);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(methodEObject2);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.reduce(classEObject8);
+		expectedViews.add(tmpView);
+		
+		tmpView = subgraphView.copy();
+		tmpView.extend(classEObject8);
+		tmpView.extend(classModelEObject1, classEObject8, classModelClasses);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(methodEObject2);
+		expectedViews.add(tmpView);
+		
+		tmpView = subgraphView.copy();
+		tmpView.extend(methodEObject2);
+		tmpView.extend(classModelEObject1, methodEObject2, classModelFeatures);
+		expectedViews.add(tmpView);
+		tmpView = tmpView.copy();
+		tmpView.extend(classEObject8);
+		expectedViews.add(tmpView);
+		
+		tmpView = subgraphView.copy();
+		tmpView.extend(classEObject8);
+		tmpView.extend(methodEObject2);
+		tmpView.extend(classModelEObject1, methodEObject2, classModelFeatures);
+		tmpView.extend(classModelEObject1, classEObject8, classModelClasses);
+		expectedViews.add(tmpView);
+		
+		assertTrue(expectedViews.equals(actualViews));
+		
+	}
+	
+	/**
+	 * Asserts that the {@link View subgraph} as returned by the {@link Iterator} of the
+	 * {@link view.ViewFactory#getSubGraphIterator(view.View)} method satisfies the following conditions.
+	 * 1.) It is a subgraph of the {@link View view}.
+	 * 2.) It contains no dangling edges.
+	 * 3.) It contains the {@link View containedSubgraph}.
+	 * @param view the {@link View view} used as the first parameter in the method call
+	 * @param subgraph a {@link View view} as returned by the {@link Iterator}
+	 * @param containedSubgraph the {@link View view} used as the second parameter in the method call
+	 */
+	private void assertSubgraphSatisfiesConditions (View view, View subgraph, View containedSubgraph) {
+		
+		assertTrue(ViewFactory.isSubgraph(subgraph, view));
+		assertFalse(subgraph.graph.getEdges().stream().anyMatch(edge -> !subgraph.contains(edge.getSource()) || !subgraph.contains(edge.getTarget())));
+		assertTrue(ViewFactory.isSubgraph(containedSubgraph, subgraph));
+		
 	}
 	
 }
