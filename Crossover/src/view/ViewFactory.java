@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -318,22 +320,213 @@ public class ViewFactory {
 		viewContainsDanglingEdge = subgraphView.graph.getEdges().stream().anyMatch(edge -> !subgraphView.contains(edge.getSource()) || !subgraphView.contains(edge.getTarget()));
 		if(viewContainsDanglingEdge) throw new IllegalArgumentException("The subgraphView must not contain dangling edges.");
 		
+		Set<Node> subgraphNodes = subgraphView.graph.getNodes().stream().map(node -> view.getNode(subgraphView.getObject(node))).collect(Collectors.toSet());
+		Set<Edge> subgraphEdges = subgraphView.graph.getEdges().stream().map(edge -> {
+			EObject sourceEObject = subgraphView.getObject(edge.getSource());
+			EObject targetEObject = subgraphView.getObject(edge.getTarget());
+			Node nodeOne = view.getNode(sourceEObject);
+			Node nodeTwo = view.getNode(targetEObject);
+			
+			Edge foundEdge = nodeOne.getOutgoing(edge.getType(), nodeTwo);
+			if(foundEdge != null) return foundEdge;
+			foundEdge = nodeOne.getIncoming(edge.getType(), nodeTwo);
+			return foundEdge;
+		}).collect(Collectors.toSet());
+		
 		return new Iterator<View>() {
 
+			Iterator<Set<Node>> powersetIterator = null;
+			boolean computedNextSubgraph = false;
+			View nextSubgraph = null;
+			Queue<View> computedViews = null;
+			
 			@Override
 			public boolean hasNext() {
-				// TODO Auto-generated method stub
-				return false;
+				
+				if (!computedNextSubgraph) {
+					computeNextSubgraph();
+					computedNextSubgraph = true;
+				}
+				
+				return (nextSubgraph != null);
+				
 			}
 
 			@Override
 			public View next() {
-				// TODO Auto-generated method stub
-				return null;
+				
+				if (hasNext()) {
+					computedNextSubgraph = false;
+				}
+				
+				return nextSubgraph;
+				
+			}
+			
+			private void computeNextSubgraph() {
+				
+				if (powersetIterator == null) {
+					powersetIterator = getPowerSetIterator(new HashSet<>(view.graph.getNodes()));
+				}
+				
+				if (computedViews == null) {
+					computedViews = new LinkedList<View>();
+				}
+
+				if (computedViews.isEmpty()) {
+					
+					if(!powersetIterator.hasNext()) {
+						nextSubgraph = null;
+					}
+					
+					while (powersetIterator.hasNext()) {
+						
+						Set<Node> set = (Set<Node>) powersetIterator.next();
+						if (!set.containsAll(subgraphNodes)) continue;
+						
+						// get all edges that can be used with this set of nodes
+						Set<Edge> edges = view.graph.getEdges().stream().
+								filter(edge -> set.contains(edge.getSource()) && set.contains(edge.getTarget())).
+								collect(Collectors.toSet());
+						
+						Iterator<Set<Edge>> edgePowerSetIterator = getPowerSetIterator(edges);
+						
+						while (edgePowerSetIterator.hasNext()) {
+							
+							Set<Edge> subsetOfEdges = (Set<Edge>) edgePowerSetIterator.next();
+							if (!subsetOfEdges.containsAll(subgraphEdges)) continue;
+							
+							View possibleSubgraph = new View(view.resource);
+							
+							set.forEach(node -> possibleSubgraph.extend(view.getObject(node)));
+							subsetOfEdges.forEach(edge -> {
+								EObject sourceEObject = view.getObject(edge.getSource());
+								EObject targetEObject = view.getObject(edge.getTarget());
+								
+								if (sourceEObject.eClass().getEAllReferences().contains(edge.getType())) {
+									possibleSubgraph.extend(sourceEObject, targetEObject, edge.getType());
+								}
+								
+								if (targetEObject.eClass().getEAllReferences().contains(edge.getType())) {
+									possibleSubgraph.extend(targetEObject, sourceEObject, edge.getType());
+								}
+							});
+							
+							computedViews.add(possibleSubgraph);
+							
+						}
+						
+						break;
+						
+					}
+					
+					if(computedViews.isEmpty()) {
+						nextSubgraph = null;
+					} else {
+						nextSubgraph = computedViews.poll();
+					}
+					
+				} else {
+					
+					nextSubgraph = computedViews.poll();
+					
+				}
+				
 			}
 			
 		};
 		
 	}
 	
+ 	static <T> Iterator<Set<T>> getPowerSetIterator (Set<T> setOfTs) {
+		return new Iterator<Set<T>>() {
+
+			boolean computedNextSet = false;
+			Set<T> nextSet = null;
+			Set<Set<T>> partialPowerSet = null;
+			Iterator<Set<T>> partialPowerSetIterator = null;
+			
+			@Override
+			public boolean hasNext() {
+				
+				if(!computedNextSet) {
+					computeNextSet();
+					computedNextSet = true;
+				}
+				
+				return (nextSet != null);
+				
+			}
+
+			@Override
+			public Set<T> next() {
+				
+				if (hasNext()) {
+					computedNextSet = false;
+				}
+				
+				return nextSet;
+				
+			}
+			
+			private void computeNextSet() {
+				
+				// initialize
+				if (partialPowerSet == null) {
+					partialPowerSet = new HashSet<Set<T>>();
+				}
+					
+				
+				// case: empty set
+				if (nextSet == null) {
+					nextSet = new HashSet<T>();
+					return;
+				}
+				
+				// last case
+				if (nextSet.equals(setOfTs)) {
+					nextSet = null;
+					return;
+				}
+				
+				// as long as not all sets of the partialPowerSet have been shown use those
+				if(partialPowerSetIterator != null && partialPowerSetIterator.hasNext()) {
+					nextSet = partialPowerSetIterator.next();
+					return;
+				}
+				
+				// case: single element
+				if (nextSet.isEmpty()) {
+					for (T t : setOfTs) {
+						partialPowerSet.add(Set.of(t));
+					}
+					
+					partialPowerSetIterator = partialPowerSet.iterator();
+					nextSet = partialPowerSetIterator.next();
+					return;
+				}
+				
+				// case: general
+				
+				Set<Set<T>> newPartialPowerSet = new HashSet<Set<T>>();
+				
+				for (Set<T> setInPartialPowerSet : partialPowerSet) {
+					for (T t : setOfTs) {
+						Set<T> tmpSet = new HashSet<>();
+						tmpSet.addAll(setInPartialPowerSet);
+						tmpSet.add(t);
+						newPartialPowerSet.add(tmpSet);
+					}
+				}
+				
+				newPartialPowerSet.removeAll(partialPowerSet);
+				partialPowerSet = newPartialPowerSet;
+				partialPowerSetIterator = partialPowerSet.iterator();
+				nextSet = partialPowerSetIterator.next();
+				
+			}
+			
+		};
+ 	}
+ 	
 }

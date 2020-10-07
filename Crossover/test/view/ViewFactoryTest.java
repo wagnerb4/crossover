@@ -928,7 +928,7 @@ class ViewFactoryTest extends ViewPackageTest {
 		
 		assertEquals(counter, actualViews.size());
 		
-		Set<View> expectedViews = new HashSet<>();
+		List<View> expectedViews = new ArrayList<>();
 		
 		View tmpView = subgraphView.copy();
 		expectedViews.add(tmpView);
@@ -942,7 +942,18 @@ class ViewFactoryTest extends ViewPackageTest {
 		tmpView.reduce(classEObject8);
 		expectedViews.add(tmpView);
 		
-		assertTrue(expectedViews.equals(actualViews));
+		for (View actualView : actualViews) {
+			boolean matchesAny = false;
+			
+			for (View expectedView : expectedViews) {
+				if (actualView.equals(expectedView)) {
+					matchesAny = true;
+					break;
+				}
+			}
+			
+			assertTrue(matchesAny);
+		}
 		
 	}
 	
@@ -1043,7 +1054,18 @@ class ViewFactoryTest extends ViewPackageTest {
 		tmpView.extend(classModelEObject1, classEObject8, classModelClasses);
 		expectedViews.add(tmpView);
 		
-		assertTrue(expectedViews.equals(actualViews));
+		for (View actualView : actualViews) {
+			boolean matchesAny = false;
+			
+			for (View expectedView : expectedViews) {
+				if (actualView.equals(expectedView)) {
+					matchesAny = true;
+					break;
+				}
+			}
+			
+			assertTrue(matchesAny);
+		}
 		
 	}
 	
