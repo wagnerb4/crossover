@@ -679,6 +679,7 @@ public class View {
 	 * Calculates the difference of this and the given {@link View}, altering this {@link View} in the process.
 	 * This operation may result in an {@link Graph graph} with dangling {@link Edge edges}.
 	 * @param view the {@link View} to subtract (it is required to have the same {@link View#resource resource} as this {@link View})
+	 * @return 
 	 * @throws ViewSetOperationException If the subtraction has not been successful and the current {@link View} is in an uncertain state.
 	 */
 	public void subtract(View view) throws ViewSetOperationException {

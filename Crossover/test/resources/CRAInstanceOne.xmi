@@ -4,7 +4,8 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:CRA="http://www.example.org/CRA"
-    xsi:schemaLocation="http://www.example.org/CRA CRA.ecore">
+    xsi:schemaLocation="http://www.example.org/CRA CRA.ecore"
+    name="1">
   <classes name="8"
       encapsulates="//@features.0 //@features.1 //@features.2"/>
   <classes name="9"

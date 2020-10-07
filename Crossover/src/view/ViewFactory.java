@@ -169,7 +169,7 @@ public class ViewFactory {
 	 * the {@link View view's} {@link View#resource resource}. The {@link EGraph eGraph}
 	 * will only contain such {@link EObject eObjects} that are contained by the given {@link View view}.
 	 * Also the {@link EObject eObjects} referenced by the  {@link EObject eObjects} in the {@link EGraph eGraph}
-	 * will comply to the {@link Edge edges} of the {@link View#graph}. The given view must not contain dangling edges.
+	 * will comply to the {@link Edge edges} of the {@link View#graph}. The given {@link View view} must not contain dangling edges.
 	 * @param view the {@link View view} to create an {@link EGraph eGraph} of
 	 * @return Returns an {@link EGraph eGraph} as described above and a map from the original {@link EObject eObjects}
 	 * to the copied ones.
@@ -253,12 +253,56 @@ public class ViewFactory {
 		
 	}
 	
-	public static View doDFS (View view, Node node) {
+	/**
+	 * Does a depth first search in the given {@link View view} starting
+	 * at the given {@link Node node}. The given {@link View view} must not
+	 * contain dangling edges.
+	 * @param view the {@link View view} to do the depth first search on, it will not be altered
+	 * @param node a {@link Node node} from the given {@link View view} to start the search at
+	 * @return Returns a new {@link View view}, that is a subgraph of the given {@link View view} and contains
+	 * all {@link Node nodes} and {@link Edge edges} reachable by the depth first search.
+	 * @throws IllegalArgumentException  if the given {@link View view} contains dangling edges or the {@link Node node}
+	 * is not part of the {@link View view}
+	 */
+	public static View doDFS (View view, Node node) throws IllegalArgumentException {
+		if(!view.contains(node)) throw new IllegalArgumentException("The node is not part of the view.");
+		boolean viewContainsDanglingEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) || !view.contains(edge.getTarget()));
+		if(viewContainsDanglingEdge) throw new IllegalArgumentException("The view must not contain dangling edges.");
 		return null;
 	}
 	
-	public static Iterator<View> getSubGraphIterator (View view) {
-		return null;
+	/**
+	 * @param view the {@link View view} to get subgraph-views of
+	 * @param subgraphView the {@link View view} to be contained in all subgraph returned by the iterator
+	 * @return Returns an {@link Iterator} of {@link View views} containing all possible subgraphs
+	 * of the given {@link View view} that contain the {@link View subgraphView}.
+	 * @throws IllegalArgumentException if the given {@link View subgraphView} is not a subgraph
+	 * of the {@link View view} or one of the {@link View views} contain dangling edges.
+	 */
+	public static Iterator<View> getSubGraphIterator (View view, View subgraphView) throws IllegalArgumentException {
+		
+		if(!ViewFactory.isSubgraph(subgraphView, view)) throw new IllegalArgumentException("The subgraphView must be a subgraph of the view.");
+		boolean viewContainsDanglingEdge = view.graph.getEdges().stream().anyMatch(edge -> !view.contains(edge.getSource()) || !view.contains(edge.getTarget()));
+		if(viewContainsDanglingEdge) throw new IllegalArgumentException("The view must not contain dangling edges.");
+		viewContainsDanglingEdge = subgraphView.graph.getEdges().stream().anyMatch(edge -> !subgraphView.contains(edge.getSource()) || !subgraphView.contains(edge.getTarget()));
+		if(viewContainsDanglingEdge) throw new IllegalArgumentException("The subgraphView must not contain dangling edges.");
+		
+		return new Iterator<View>() {
+
+			@Override
+			public boolean hasNext() {
+				// TODO Auto-generated method stub
+				return false;
+			}
+
+			@Override
+			public View next() {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+		};
+		
 	}
 	
 }

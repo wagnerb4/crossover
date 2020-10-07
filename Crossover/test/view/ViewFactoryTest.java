@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.security.interfaces.ECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.TreeIterator;
+import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
@@ -662,7 +664,82 @@ class ViewFactoryTest extends ViewPackageTest {
 	 */
 	@Test
 	final void testDoDFS() {
-		fail("Not yet implemented"); // TODO
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass attributeEClass = eClasses[3];
+		EClass methodEClass = eClasses[4];
+		
+		EAttribute name = getEAttributeFromEClass(namedElementEClass, "name");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference featureIsEncapsulatedBy = getEReferenceFromEClass(methodEClass, "isEncapsulatedBy");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("1"),
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3"),
+				eObject -> eObject.eGet(name).equals("4"),
+				eObject -> eObject.eGet(name).equals("5"),
+				eObject -> eObject.eGet(name).equals("8"),
+				eObject -> eObject.eGet(name).equals("9")
+		);
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(classModelEClass);
+		view.extend(classEClass);
+		view.extend(methodEClass);
+		view.extend(attributeEClass);
+		view.extend(classModelClasses);
+		view.extend(classModelFeatures);
+		view.extend(encapsulates);
+		view.extend(featureIsEncapsulatedBy);
+		view.extend(methodDataDependency);
+		view.extend(methodFunctionalDependency);
+		view.reduce(mapOfSets.get(0).iterator().next(), mapOfSets.get(4).iterator().next(), classModelFeatures);
+		
+		View expectedComponentOne = view.copy();
+		expectedComponentOne.reduce(mapOfSets.get(4).iterator().next());
+		expectedComponentOne.reduce(mapOfSets.get(8).iterator().next());
+		expectedComponentOne.removeDangling();
+		View expectedComponentTwo = view.copy();
+		try {
+			expectedComponentTwo.subtract(expectedComponentOne);
+		} catch (ViewSetOperationException e) {
+			fail(e.getMessage());
+		}
+		
+		View actualComponentOne = ViewFactory.doDFS(view, view.getNode(mapOfSets.get(0).iterator().next()));
+		assertTrue(expectedComponentOne.equals(actualComponentOne));
+		View actualComponentTwo = ViewFactory.doDFS(view, view.getNode(mapOfSets.get(4).iterator().next()));
+		assertTrue(expectedComponentTwo.equals(actualComponentTwo));
+		
+		try {
+			ViewFactory.doDFS(expectedComponentOne, view.getNode(mapOfSets.get(0).iterator().next()));
+			fail("Expected IllegalArgumentException but no was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The node is not part of the view.", e.getMessage());
+		}
+		
+		view.reduce(mapOfSets.get(0).iterator().next());
+		
+		try {
+			ViewFactory.doDFS(view, view.getNode(mapOfSets.get(4).iterator().next()));
+			fail("Expected IllegalArgumentException but no was thrown.");
+		} catch (IllegalArgumentException e) {
+			assertEquals("The view must not contain dangling edges.", e.getMessage());
+		}
+		
 	}
 
 	// GetSubGraphIterator
