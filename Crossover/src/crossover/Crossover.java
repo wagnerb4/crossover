@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
@@ -20,6 +21,7 @@ import org.eclipse.emf.henshin.interpreter.Engine;
 import org.eclipse.emf.henshin.interpreter.Match;
 import org.eclipse.emf.henshin.interpreter.impl.EngineImpl;
 import org.eclipse.emf.henshin.interpreter.impl.MatchImpl;
+import org.eclipse.emf.henshin.model.Edge;
 import org.eclipse.emf.henshin.model.Mapping;
 import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.Rule;
@@ -138,7 +140,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		View problemBorder = findBorder(metamodel, problemPartEClasses, problemPartEReferences);
 		
-		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder);
+		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder, strategy);
 		this.problemSplitSSETwo = new Pair<View, View> (
 				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, 
 						MappingUtil.mapByOrigin(problemPartMappings, origin -> this.problemSplitSSEOne.getFirst().
@@ -202,10 +204,42 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @return Returns a {@link Pair pair} of {@link View views} over the same
 	 * {@link View#resource} as the given {@link View problemPartView}, each representing
 	 * one part of the split.
+	 * @throws ViewSetOperationException  if a set-operation on a view was not successfull
+	 * @throws IllegalStateException if general operation on a view was not successfull
 	 */
-	private Pair<View, View> splitProblemPart (View problemPartView, View problemBorder) {
-		// TODO: implement
-		return null;
+	private Pair<View, View> splitProblemPart (View problemPartView, View problemBorder, Strategy strategy) throws ViewSetOperationException, IllegalStateException {
+		
+		View matchedBorder = problemPartView.copy();
+		boolean matchedSuccessfully = matchedBorder.matchViewByMetamodel(problemBorder);
+		if(!matchedSuccessfully) throw new IllegalStateException("The border counldn't be matched.");
+		View remainderView = problemPartView.copy();
+		remainderView.subtract(matchedBorder);
+		
+		View problemPartOne = remainderView.copy();
+		View problemPartTwo = remainderView.copy();
+		
+		View partOfMatchedBorder = matchedBorder.copy();
+		strategy.apply(partOfMatchedBorder);
+		partOfMatchedBorder.removeDangling();
+		
+		problemPartOne.union(partOfMatchedBorder);
+		
+		for (Edge edge : problemPartView.getGraph().getEdges()) {
+			EObject sourceEObject = problemPartView.getObject(edge.getSource());
+			EObject targetEObject = problemPartView.getObject(edge.getTarget());
+			if(problemPartOne.contains(sourceEObject) && problemPartOne.contains(targetEObject)) {
+				boolean addedSuccessfully = problemPartOne.extend(sourceEObject, targetEObject, edge.getType());
+				if(!addedSuccessfully) addedSuccessfully = problemPartOne.extend(targetEObject, sourceEObject, edge.getType());
+				if(!addedSuccessfully) throw new IllegalStateException("Couldn't add an edge to problemPartOne.");
+			}
+		}
+		
+		View notProblemPartOne = problemPartView.copy();
+		notProblemPartOne.subtract(problemPartOne);
+		problemPartTwo.union(notProblemPartOne);
+		
+		return new Pair<View, View>(problemPartOne, problemPartTwo);
+		
 	}
 	
 	/**
@@ -219,23 +253,90 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @return Returns a {@link View view} over the {@link Resource metamodel} containing the border elements.
 	 */
 	private View findBorder (Resource metamodel, List<EClass> problemPartEClasses, List<EReference> problemPartEReferences) {
-		// TODO: implement
-		return null;
+		View borderView = new View(metamodel);
+		
+		TreeIterator<EObject> treeIterator = metamodel.getAllContents();
+		
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				
+				if(!problemPartEClasses.contains(eClass)) {
+					for (EReference eReference: eClass.getEAllReferences()) {
+						EClass neighbouringEClass = eReference.getEReferenceType();
+						if(problemPartEClasses.contains(neighbouringEClass)) {
+							borderView.extend(((EObject) neighbouringEClass));
+						}
+					}
+				}
+				
+				for (EReference eReference : eClass.getEAllReferences()) {
+					if(!problemPartEReferences.contains(eReference)) {
+						
+						if(problemPartEClasses.contains(eReference.getEContainingClass())) {
+							borderView.extend(((EObject) eReference.getEContainingClass()));
+						}
+						
+						if(problemPartEClasses.contains(eReference.getEReferenceType())) {
+							borderView.extend(((EObject) eReference.getEReferenceType()));
+						}
+						
+					}
+				}
+				
+			}
+			
+		}
+		
+		return borderView;
 	}
 	
 	/**
 	 * Splits the search space element (given indirectly as the
 	 * {@link View#resource resource} of the {@link View views}) according
-	 * to the given {@code problemSplit}.
+	 * to the given {@code problemSplit}. Both {@link View views} are over the
+	 * same resource.
 	 * @param problemPart the {@link View view} respresenting the complete problem part
 	 * @param problemSplit the split of the {@link View problemPart}
 	 * @return Returns a {@link Pair pair} of two new {@link View views} on the same 
 	 * {@link View#resource resource} as the given {@link View views} representing the split of
 	 * the search space element.
+	 * @throws ViewSetOperationException if a set-operation on a view was not successfull
 	 */
-	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit) {
-		// TODO: implement
-		return null;
+	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit) throws ViewSetOperationException {
+		
+		View searchSpaceElement = problemPart.copy();
+		searchSpaceElement.extendByAllNodes();
+		searchSpaceElement.completeDangling();
+		searchSpaceElement.subtract(problemPart);
+		
+		View searchSpaceElementOne = searchSpaceElement.copy();
+		searchSpaceElementOne.union(problemSplit.getFirst());
+		searchSpaceElementOne.removeDangling();
+		
+		View tempProblemSplitOne = problemSplit.getFirst().copy();
+		View tempSearchSpaceElementOne = new View(searchSpaceElementOne.getResource());
+		
+		while (!tempProblemSplitOne.isEmpty()) {
+			EObject randomNode = tempProblemSplitOne.getObject(tempProblemSplitOne.getRandomNode());
+			View connectedComponentOfSearchSpaceElementOne = ViewFactory.doDFS(searchSpaceElementOne, searchSpaceElementOne.getNode(randomNode));
+			connectedComponentOfSearchSpaceElementOne.intersect(tempProblemSplitOne);
+			tempProblemSplitOne.subtract(connectedComponentOfSearchSpaceElementOne);
+			tempProblemSplitOne.union(connectedComponentOfSearchSpaceElementOne);
+		}
+		
+		searchSpaceElementOne = tempSearchSpaceElementOne;
+		
+		View searchSpaceElementTwo = searchSpaceElement.copy();
+		searchSpaceElementTwo.subtract(problemPart);
+		searchSpaceElementTwo.subtract(searchSpaceElementOne);
+		searchSpaceElementTwo.union(problemSplit.getSecond());
+		searchSpaceElementTwo.extendByMissingEdges();
+		
+		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
+		
 	}
 
 	/**
