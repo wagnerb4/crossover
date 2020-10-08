@@ -1,12 +1,16 @@
 package crossover;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.henshin.model.Mapping;
 import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
+
+import view.View;
 
 /**
  * A utility class for working with {@link Set sets} of {@link Mapping mappings}.
@@ -98,4 +102,22 @@ public class MappingUtil {
 		return null;
 	}
 	
+	/**
+	 * Finds all possible matches from {@link View fromView} to the {@link View toView} that project
+	 * the part in the {@link View identityView} to itself. A <i>match</i> is a set of {@link Mapping mappings}
+	 * from the {@link View#getNodes() nodes} of the {@link View fromView} to those of the {@link View toView}.
+	 * 
+	 * @param fromView the {@link View view} over {@link Resource} <b><i>A</i></b> containing the domain of the mapping
+	 * @param toView  the {@link View}  over {@link Resource} <b><i>B</i></b> containing the codomain of the mapping
+	 * @param identity a {@link Map map} of {@link EObjects eObjects} from {@link Resource} <b><i>A</i></b> to {@link Resource} <b><i>B</i></b>,
+	 * it maps the {@link EObject eObjects} from the {@link View identityView} to those of the {@link View toView}
+	 * @param identityView a {@link View view} over {@link Resource} <b><i>A</i></b> containing the {@link EObject eObjects}
+	 * and references that are part of the identity, it may contain dangling {@link Edges}
+	 * @return Returns an {@link Iterator} of all possible {@link Mapping matches} satisfying the condition described above.
+	 */
+	public static Iterator<Set<Mapping>> getMappingSetIterator (View fromView, View toView, Map<EObject, EObject> identity, View identityView) {
+		// TODO: implement
+		return null;
+	}
+
 }

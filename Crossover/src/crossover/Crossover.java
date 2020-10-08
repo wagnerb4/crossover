@@ -1,10 +1,12 @@
 package crossover;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -21,6 +23,7 @@ import org.eclipse.emf.henshin.interpreter.impl.MatchImpl;
 import org.eclipse.emf.henshin.model.Mapping;
 import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.Rule;
+import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
 
 import view.View;
@@ -54,6 +57,12 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * {@link Crossover#splitProblemPart(View, View)}.
 	 */
 	private Pair<View, View> problemSplitSSETwo;
+	
+	/**
+	 * A set of {@link Mapping mappings}  from {@link View problemPartSSEOne} to {@link problemPartSSETwo}.
+	 * This mapping represents a graph isomorphism between the problem parts of each search space element.
+	 */
+	private Set<Mapping> problemPartMappings;
 	
 	/**
 	 * A {@link Pair pair} of {@link View views} over the {@link View#resource resource} that represents
@@ -123,7 +132,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		 * A set of {@link Mapping mappings}  from {@link View problemPartSSEOne} to {@link problemPartSSETwo}.
 		 * This mapping represents a graph isomorphism between the problem parts of each search space element.
 		 */
-		Set<Mapping> problemPartMappings = ViewFactory.buildViewMapping(problemPartSSEOne, problemPartSSETwo, problemPartEClasses, problemPartEReferences);
+		problemPartMappings = ViewFactory.buildViewMapping(problemPartSSEOne, problemPartSSETwo, problemPartEClasses, problemPartEReferences);
 		
 		// split the problem part
 		
@@ -131,14 +140,14 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder);
 		this.problemSplitSSETwo = new Pair<View, View> (
-				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, problemPartMappings.stream().map(mapping -> {
-					mapping.setOrigin(this.problemSplitSSEOne.getFirst().getNode(problemPartSSEOne.getObject(mapping.getOrigin())));
-					return mapping;
-				}).collect(Collectors.toSet())),
-				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getSecond(), this.problemPartSSETwo, problemPartMappings.stream().map(mapping -> {
-					mapping.setOrigin(this.problemSplitSSEOne.getSecond().getNode(problemPartSSEOne.getObject(mapping.getOrigin())));
-					return mapping;
-				}).collect(Collectors.toSet()))
+				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, 
+						MappingUtil.mapByOrigin(problemPartMappings, origin -> this.problemSplitSSEOne.getFirst().
+																				getNode(problemPartSSEOne.getObject(origin)))
+						),
+				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getSecond(), this.problemPartSSETwo, 
+						MappingUtil.mapByOrigin(problemPartMappings, origin -> this.problemSplitSSEOne.getSecond().
+																				getNode(problemPartSSEOne.getObject(origin)))
+					)
 		);
 		
 		// split the search space elements according to the problem split
@@ -240,6 +249,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			
 			boolean computedNextSpan = false;
 			CustomSpan nextSpan = null;
+			Iterator<CustomSpan> computedSpans = null;
+			Iterator<View> subgraphIterator = null;
 			
 			@Override
 			public boolean hasNext() {
@@ -265,7 +276,64 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			}
 			
 			private void computeNextSpan () {
-				// TODO: implement
+				
+				// initialize
+				if (subgraphIterator == null) {
+					subgraphIterator = ViewFactory.getSubGraphIterator(intersectionOfSSEOne, problemPartIntersection);
+				}
+				
+				if(computedSpans != null && computedSpans.hasNext()) {
+					nextSpan = computedSpans.next();
+				}
+				
+				Set<CustomSpan> spans = Collections.emptySet();
+				
+				while (spans.isEmpty() && subgraphIterator.hasNext()) {
+					
+					View subgraphOfIntersectionOfSSEOne = subgraphIterator.next();
+					
+					// get mapping from subgraphOfIntersectionOfSSEOne to intersectionOfSSEOne
+					Set<Mapping> mappingsOne = new HashSet<Mapping>();
+					subgraphOfIntersectionOfSSEOne.getGraph().getNodes().forEach(node -> {
+						Node mappedNode = intersectionOfSSEOne.getNode(subgraphOfIntersectionOfSSEOne.getObject(node));
+						Mapping mapping = new MappingImpl();
+						mapping.setOrigin(node);
+						mapping.setImage(mappedNode);
+						mappingsOne.add(mapping);
+					});
+					
+					Map<EObject, EObject> mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo = new HashMap<>();
+					problemPartIntersection.getGraph().getNodes().forEach(node -> {
+						EObject originEObject = problemPartIntersection.getObject(node);
+						EObject targetEObject = problemPartSSETwo.getObject(MappingUtil.getImageSingle(problemPartMappings, problemPartSSEOne.getNode(originEObject)));
+						mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo.put(originEObject, targetEObject);
+					});
+					
+					Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator(
+							subgraphOfIntersectionOfSSEOne, // from View
+							intersectionOfSSETwo, // to View
+							mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo, // mapping from itentity to "to View"
+							problemPartIntersection // itentity
+					);
+					
+					spans = new HashSet<CustomSpan>();
+					
+					while (mappingSetIterator.hasNext()) {
+						Set<Mapping> mappingsTwo = (Set<Mapping>) mappingSetIterator.next();
+						spans.add(new CustomSpan(subgraphOfIntersectionOfSSEOne, mappingsOne, mappingsTwo));
+					}
+					
+				}
+				
+				if(!spans.isEmpty()) {
+					computedSpans = spans.iterator();
+					nextSpan = computedSpans.next();
+					return;
+				}
+				
+				// subgraphIterator.hasNext() == false --> there are no more spans
+				nextSpan = null;
+				
 			}
 			
 		};
@@ -326,22 +394,16 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 					intersectionToSSEOneFirstSplitElement.setRhs(splitOfSSEOne.getFirst().getGraph());
 					intersectionToSSEOneSecondSplitElement.setRhs(splitOfSSEOne.getSecond().getGraph());
 					
-					Set<Mapping> mappingsFromIntersectionToSSEOneFirstSplitElement = span.getMappingsOne().
-							stream().map((Mapping mapping) -> {
-								Node image = mapping.getImage();
-								mapping.setImage(splitOfSSEOne.getFirst().getNode(intersectionOfSSEOne.getObject(image)));
-								return mapping;
-							}).collect(Collectors.toSet());
-					
+					Set<Mapping> mappingsFromIntersectionToSSEOneFirstSplitElement = MappingUtil.
+							mapByImage(span.getMappingsOne(), image -> splitOfSSEOne.getFirst().
+									getNode(intersectionOfSSEOne.getObject(image))
+							);
 					intersectionToSSEOneFirstSplitElement.getMappings().addAll(mappingsFromIntersectionToSSEOneFirstSplitElement);
 					
-					Set<Mapping> mappingsFromIntersectionToSSEOneSecondSplitElement = span.getMappingsOne().
-							stream().map((Mapping mapping) -> {
-								Node image = mapping.getImage();
-								mapping.setImage(splitOfSSEOne.getSecond().getNode(intersectionOfSSEOne.getObject(image)));
-								return mapping;
-							}).collect(Collectors.toSet());
-					
+					Set<Mapping> mappingsFromIntersectionToSSEOneSecondSplitElement = MappingUtil.
+							mapByImage(span.getMappingsOne(), image -> splitOfSSEOne.getSecond().
+									getNode(intersectionOfSSEOne.getObject(image))
+							);
 					intersectionToSSEOneSecondSplitElement.getMappings().addAll(mappingsFromIntersectionToSSEOneSecondSplitElement);
 					
 					// apply rules
