@@ -34,6 +34,8 @@ import org.eclipse.emf.henshin.model.impl.NodeImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * @author Benjamin Wagner
@@ -3932,6 +3934,78 @@ class ViewTest extends ViewPackageTest {
 		
 	}
 
-	// TODO: Write tests for contains methods and extendByAllNodes
+	/**
+	 * Test method for {@link View#extendByAllNodes()}.
+	 */
+	@ParameterizedTest
+	@ValueSource(ints = {1, 2, 3})
+	final void testExtendByAllNodes (int scrumPlanningInstanceNumber) {
+		
+		Resource scrumPlanningInstanceReference = switch (scrumPlanningInstanceNumber) {
+			case 1 -> SCRUM_PLANNIG_INSTANCE_ONE;
+			case 2 -> SCRUM_PLANNIG_INSTANCE_TWO;
+			case 3 -> SCRUM_PLANNIG_INSTANCE_THREE;
+			default -> null;
+		};
+		
+		if(scrumPlanningInstanceReference == null) 
+			throw new IllegalArgumentException("Unexpected value: " + scrumPlanningInstanceNumber);
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		EClass[] eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Sprint", "Plan");
+		
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[4];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		View fullView = new View(scrumPlanningInstanceReference);
+		
+		for (EClass eClass : eClasses) {
+			fullView.extend(eClass);
+		}
+		
+		View view = new View(scrumPlanningInstanceReference);
+
+		// empty view
+		view.extendByAllNodes();
+		assertTrue(fullView.equals(view));
+		
+		// nodes only
+		view.clear();
+		view.extend(workitem);
+		view.extend(stakeholder);
+		
+		view.extendByAllNodes();
+		assertTrue(fullView.equals(view));
+		
+		// edges only
+		
+		fullView.extend(planStakeholders);
+		fullView.extend(backlogWorkitems);
+		
+		view.clear();
+		view.extend(planStakeholders);
+		view.extend(backlogWorkitems);
+		
+		view.extendByAllNodes();
+		assertTrue(fullView.equals(view));
+		
+		// nodes and edges
+		view.clear();
+		view.extend(workitem);
+		view.extend(stakeholder);
+		view.extend(planStakeholders);
+		view.extend(backlogWorkitems);
+		
+		view.extendByAllNodes();
+		assertTrue(fullView.equals(view));
+		
+	}
+	
+	// TODO: Write tests for contains methods
 	
 }
