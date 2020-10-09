@@ -4006,6 +4006,36 @@ class ViewTest extends ViewPackageTest {
 		
 	}
 	
-	// TODO: Write tests for contains methods
+	/**
+	 * Test method for {@link View#contains(Node)}.
+	 */
+	@Test
+	final void testContainsNodeWrongInput() {
+		fail("Not yet implemented"); // TODO
+	}
+	
+	/**
+	 * Test method for {@link View#contains(EObject)}.
+	 */
+	@Test
+	final void testContainsEObject() {
+		fail("Not yet implemented"); // TODO
+	}
+	
+	/**
+	 * Test method for {@link View#contains(Edge, boolean)}.
+	 */
+	@Test
+	final void testContainsEdgeBoolean() {
+		fail("Not yet implemented"); // TODO
+	}
+	
+	/**
+	 * Test method for {@link View#contains(EObject, EObject, EReference, boolean)}.
+	 */
+	@Test
+	final void testContainsEObjectEObjectEReferenceBoolean () {
+		fail("Not yet implemented"); // TODO
+	}
 	
 }
