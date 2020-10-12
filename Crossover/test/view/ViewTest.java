@@ -4007,35 +4007,790 @@ class ViewTest extends ViewPackageTest {
 	}
 	
 	/**
-	 * Test method for {@link View#contains(Node)}.
+	 * Test method for {@link View#contains(Node)} with wrong input parameters.
 	 */
 	@Test
 	final void testContainsNodeWrongInput() {
-		fail("Not yet implemented"); // TODO
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class");
+		EClass namedElement = eClasses[0];
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("5")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject attribute5 = mapOfSets.get(1).iterator().next();
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Sprint", "Plan");
+		
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[4];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(method2);
+		view.extend(attribute5);
+		
+		// empty view
+		View copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(method2)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(attribute5)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(method2)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(attribute5)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(planStakeholders);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(method2)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(attribute5)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(method2)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(view.getNode(attribute5)));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
 	}
 	
 	/**
-	 * Test method for {@link View#contains(EObject)}.
+	 * Test method for {@link View#contains(Node)} with correct input parameters.
 	 */
 	@Test
-	final void testContainsEObject() {
-		fail("Not yet implemented"); // TODO
+	final void testContainsNodeCorrectInput() {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("2"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("3"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("5"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("8")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject method3 = mapOfSets.get(1).iterator().next();
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class8 = mapOfSets.get(3).iterator().next();
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		// nodes only
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		view.extend(class8);
+		
+		View copyOfView = view.copy();
+		
+		assertTrue(view.contains(view.getNode(method2)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(method3)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(attribute5)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(class8)));
+		assertTrue(copyOfView.equals(view));
+		
+		// edges only
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		
+		copyOfView = view.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(view.contains(edge.getSource()));
+			assertTrue(copyOfView.equals(view));
+			
+			assertFalse(view.contains(edge.getTarget()));
+			assertTrue(copyOfView.equals(view));
+		}
+		
+		// nodes and edges
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		copyOfView = view.copy();
+		
+		assertFalse(view.contains(view.graphMap.get(class8)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(method2)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(method3)));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(view.getNode(attribute5)));
+		assertTrue(copyOfView.equals(view));
+
 	}
 	
 	/**
-	 * Test method for {@link View#contains(Edge, boolean)}.
+	 * Test method for {@link View#contains(EObject)} with wrong input parameters.
 	 */
 	@Test
-	final void testContainsEdgeBoolean() {
-		fail("Not yet implemented"); // TODO
+	final void testContainsEObjectWrongInput() {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class");
+		EClass namedElement = eClasses[0];
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("5")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject attribute5 = mapOfSets.get(1).iterator().next();
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Sprint", "Plan");
+		
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[4];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		// empty view
+		View copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(method2));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(attribute5));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(method2));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(attribute5));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(planStakeholders);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(method2));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(attribute5));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(method2));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(attribute5));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
 	}
 	
 	/**
-	 * Test method for {@link View#contains(EObject, EObject, EReference, boolean)}.
+	 * Test method for {@link View#contains(EObject)} with correct input parameters.
 	 */
 	@Test
-	final void testContainsEObjectEObjectEReferenceBoolean () {
-		fail("Not yet implemented"); // TODO
+	final void testContainsEObjectCorrectInput() {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("2"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("3"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("5"),
+				eObject -> !eObject.eClass().getName().equals("ClassModel") && eObject.eGet(name).equals("8")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject method3 = mapOfSets.get(1).iterator().next();
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class8 = mapOfSets.get(3).iterator().next();
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		// nodes only
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		view.extend(class8);
+		
+		View copyOfView = view.copy();
+		
+		assertTrue(view.contains(method2));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(method3));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(attribute5));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(class8));
+		assertTrue(copyOfView.equals(view));
+		
+		// edges only
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		
+		copyOfView = view.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(view.contains(view.objectMap.get(edge.getSource())));
+			assertTrue(copyOfView.equals(view));
+			
+			assertFalse(view.contains(view.objectMap.get(edge.getTarget())));
+			assertTrue(copyOfView.equals(view));
+		}
+		
+		// nodes and edges
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		copyOfView = view.copy();
+		
+		assertFalse(view.contains(class8));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(method2));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(method3));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(attribute5));
+		assertTrue(copyOfView.equals(view));
+		
+	}
+	
+	/**
+	 * Test method for {@link View#contains(Edge, boolean)} with wrong input parameters.
+	 */
+	@Test
+	final void testContainsEdgeBooleanWrongInput() {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Sprint", "Plan");
+		
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[4];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		
+		// empty view
+		View copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, false));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+			
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, true));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		}
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, false));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+			
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, true));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		}
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(planStakeholders);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, false));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+			
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, true));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		}
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, false));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+			
+			assertFalse(viewOnScrumPlanningInstanceOne.contains(edge, true));
+			assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		}
+
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+	}
+	
+	/**
+	 * Test method for {@link View#contains(Edge, boolean)} with correct input parameters.
+	 */
+	@Test
+	final void testContainsEdgeBooleanCorrectInput() {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3"),
+				eObject -> eObject.eGet(name).equals("5"),
+				eObject -> eObject.eGet(name).equals("8"),
+				eObject -> eObject.eGet(name).equals("9")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject method3 = mapOfSets.get(1).iterator().next();
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class9 = mapOfSets.get(4).iterator().next();
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		// edges only
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		
+		View copyOfView = view.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			assertFalse(view.contains(edge, false));
+			assertTrue(copyOfView.equals(view));
+			
+			assertTrue(view.contains(edge, true));
+			assertTrue(copyOfView.equals(view));
+		}
+		
+		// nodes and edges
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		view.extend(classModelEClass);
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		view.extend(class9);
+		copyOfView = view.copy();
+		
+		for (Edge edge : view.graph.getEdges()) {
+			
+			assertTrue(view.contains(edge, true));
+			assertTrue(copyOfView.equals(view));
+			
+			if (view.objectMap.get(edge.getSource()) == class9 || 
+					view.objectMap.get(edge.getTarget()) == class9) {
+				assertTrue(view.contains(edge, false));
+			} else {
+				assertFalse(view.contains(edge, false));
+			}
+			
+		}
+		
+	}
+		
+	/**
+	 * Test method for {@link View#contains(EObject, EObject, EReference, boolean)} with wrong input parameters.
+	 */
+	@Test
+	final void testContainsEObjectEObjectEReferenceBooleanWrongInputParemeters () {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3"),
+				eObject -> eObject.eGet(name).equals("5"),
+				eObject -> eObject.eGet(name).equals("8"),
+				eObject -> eObject.eGet(name).equals("9"),
+				eObject -> eObject.eGet(name).equals("1")
+		);
+		
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class9 = mapOfSets.get(4).iterator().next();
+		EObject classModel1 = mapOfSets.get(5).iterator().next();
+		
+		// get the Stakeholder and Backlog EClass from the metamodel
+		eClasses = getEClassFromResource(SCRUM_PLANNIG_ECORE, "Stakeholder", "Backlog", "WorkItem", "Sprint", "Plan");
+		
+		EClass stakeholder = eClasses[0];
+		EClass backlog = eClasses[1];
+		EClass workitem = eClasses[2];
+		EClass plan = eClasses[4];
+		
+		EReference backlogWorkitems = getEReferenceFromEClass(backlog, "workitems");
+		EReference planStakeholders = getEReferenceFromEClass(plan, "stakeholders");
+		
+		// empty view
+		View copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes only
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// edges only
+		viewOnScrumPlanningInstanceOne.clear();
+		viewOnScrumPlanningInstanceOne.extend(backlogWorkitems);
+		viewOnScrumPlanningInstanceOne.extend(planStakeholders);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		// nodes and edges
+		viewOnScrumPlanningInstanceOne.extend(stakeholder);
+		viewOnScrumPlanningInstanceOne.extend(workitem);
+		
+		copyOfViewOnScrumPlanningInstanceOne = viewOnScrumPlanningInstanceOne.copy();
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, false));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+		assertFalse(viewOnScrumPlanningInstanceOne.contains(null, null, null, true));
+		assertTrue(copyOfViewOnScrumPlanningInstanceOne.equals(viewOnScrumPlanningInstanceOne));
+		
+	}
+	
+	/**
+	 * Test method for {@link View#contains(EObject, EObject, EReference, boolean)} with correct input parameters.
+	 */
+	@Test
+	final void testContainsEObjectEObjectEReferenceBooleanCorrectInputParemeters () {
+		
+		// get CRA meta-model elements
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class", "ClassModel");
+		EClass namedElement = eClasses[0];
+		EClass classEClass = eClasses[1];
+		EClass classModelEClass = eClasses[2];
+		
+		EAttribute name = getEAttributeFromEClass(namedElement, "name");
+		EReference encapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		
+		// get CRAInstanceOne elements
+		
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3"),
+				eObject -> eObject.eGet(name).equals("5"),
+				eObject -> eObject.eGet(name).equals("8"),
+				eObject -> eObject.eGet(name).equals("9"),
+				eObject -> eObject.eGet(name).equals("1")
+		);
+		
+		EObject method2 = mapOfSets.get(0).iterator().next();
+		EObject method3 = mapOfSets.get(1).iterator().next();
+		EObject attribute5 = mapOfSets.get(2).iterator().next();
+		EObject class8 = mapOfSets.get(3).iterator().next();
+		EObject class9 = mapOfSets.get(4).iterator().next();
+		EObject classModel1 = mapOfSets.get(5).iterator().next();
+		
+		View view = new View(CRA_INSTANCE_ONE);
+		
+		// edges only
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		
+		View copyOfView = view.copy();
+		
+		assertFalse(view.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfView.equals(view));
+		
+		assertFalse(view.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfView.equals(view));
+		
+		// nodes and edges
+		view.clear();
+		view.extend(encapsulates);
+		view.extend(classModelClasses);
+		view.extend(classModelEClass);
+		view.extend(method2);
+		view.extend(method3);
+		view.extend(attribute5);
+		view.extend(class9);
+		copyOfView = view.copy();
+		
+		assertTrue(view.contains(class9, attribute5, encapsulates, false));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(class9, attribute5, encapsulates, true));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(classModel1, class9, classModelClasses, false));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(classModel1, class9, classModelClasses, true));
+		assertTrue(copyOfView.equals(view));
+		
+		assertFalse(view.contains(classModel1, class8, classModelClasses, false));
+		assertTrue(copyOfView.equals(view));
+		
+		assertTrue(view.contains(classModel1, class8, classModelClasses, true));
+		assertTrue(copyOfView.equals(view));
+		
 	}
 	
 }
