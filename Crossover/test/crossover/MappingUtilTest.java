@@ -3,9 +3,10 @@
  */
 package crossover;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.charset.Charset;
 import java.time.Clock;
@@ -328,4 +329,12 @@ class MappingUtilTest {
 		
 	}
 
+	/**
+	 * Test method for {@link crossover.MappingUtil#getMappingSetIterator(view.View, view.View, java.util.Map, view.View)}.
+	 */
+	@Test
+	final void testGetMappingSetIterator() {
+		fail("Not yet implemented"); // TODO
+	}
+	
 }
