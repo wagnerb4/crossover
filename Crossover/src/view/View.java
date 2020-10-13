@@ -1,6 +1,7 @@
 package view;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -107,6 +108,10 @@ public class View {
 			int randomIndex = (int) (Math.random() * nodes.size());
 			return nodes.get(randomIndex);
 		}
+	}
+	
+	public Collection<EObject> getContainedEObjects () {
+		return graph.getNodes().stream().map(this::getObject).collect(Collectors.toSet());
 	}
 	
 	/**

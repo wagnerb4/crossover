@@ -1,5 +1,6 @@
 package crossover;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -118,8 +119,57 @@ public class MappingUtil {
 	 * @throws IllegalArgumentException when the given parameters don't match the required conditions.
 	 */
 	public static Iterator<Set<Mapping>> getMappingSetIterator (View fromView, View toView, Map<EObject, EObject> identity, View identityView) throws IllegalArgumentException {
-		// TODO: implement
-		return null;
+		
+		if (fromView == null) throw new IllegalArgumentException("The fromView must not be null.");
+		if (toView == null)  throw new IllegalArgumentException("The toView must not be null.");
+		if (identity == null) throw new IllegalArgumentException("The identity map must not be null.");
+		if (identityView == null) throw new IllegalArgumentException("The identity view must not be null.");
+		if (fromView.getResource() == toView.getResource()) throw new IllegalArgumentException("The toView must be over a different resource than the fromView.");
+		if (fromView.getResource() != identityView.getResource()) throw new IllegalArgumentException("The identityView must be over the same resource than the fromView.");
+		if (fromView.getGraph().getNodes().size() > toView.getGraph().getNodes().size()) throw new IllegalArgumentException("The fromView must not contain more elements than the toView.");
+		
+		Set<EObject> eObjectsFromResourceA = new HashSet<>();
+		Set<EObject> eObjectsFromResourceB = new HashSet<>();
+		fromView.getResource().getAllContents().forEachRemaining(eObjectsFromResourceA::add);
+		toView.getResource().getAllContents().forEachRemaining(eObjectsFromResourceB::add);
+		if (!eObjectsFromResourceA.containsAll(identity.keySet()) || !eObjectsFromResourceB.containsAll(identity.values())) throw new IllegalArgumentException("The identity map must map from the identityView to the toView.");
+		
+		if (!identity.keySet().containsAll(identityView.getContainedEObjects())) throw new IllegalArgumentException("The identity map must map all elements of the identityView.");
+		
+		return new Iterator<Set<Mapping>>() {
+			
+			boolean computedNextSet = false;
+			Set<Mapping> nextSet = null;
+
+			@Override
+			public boolean hasNext() {
+
+				if(!computedNextSet) {
+					computeNextSet();
+					computedNextSet = true;
+				}
+				
+				return (nextSet != null);
+				
+			}
+
+			@Override
+			public Set<Mapping> next() {
+				
+				if (hasNext()) {
+					computedNextSet = false;
+				}
+				
+				return nextSet;
+				
+			}
+			
+			private void computeNextSet() {
+				// TODO: implement
+			}
+			
+		};
+		
 	}
 
 }

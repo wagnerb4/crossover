@@ -50,6 +50,7 @@ class MappingUtilTest extends TestResources {
 	
 	private static Resource GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI;
 	private static Resource GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I;
+	private static Resource GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE;
 	
 	// setup
 	
@@ -59,8 +60,9 @@ class MappingUtilTest extends TestResources {
 	@BeforeAll
 	static void setUpGetMappingSetIteratorTestInstances() throws Exception {
 		HenshinResourceSet resourceSet = new HenshinResourceSet(RESOURCE_PATH);
-		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI = resourceSet.createResource("GetMappingSetIteratorTest_1_CRAInstance_FI.xmi");
-		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I = resourceSet.createResource("GetMappingSetIteratorTest_1_CRAInstance_I.xmi");
+		GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE = resourceSet.getResource("CRA.ecore");
+		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_FI.xmi");
+		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_I.xmi");
 	}
 	
 	private Set<Mapping> initRandomMapping (int size) {
@@ -440,7 +442,7 @@ class MappingUtilTest extends TestResources {
 		
 		// fromView contains more elements than the toView
 		try {
-			MappingUtil.getMappingSetIterator(viewTwo, viewOne, new HashMap<EObject, EObject>(), viewTwo);
+			MappingUtil.getMappingSetIterator(viewOne, viewTwo, new HashMap<EObject, EObject>(), viewOne);
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The fromView must not contain more elements than the toView.", e.getMessage());
@@ -448,18 +450,20 @@ class MappingUtilTest extends TestResources {
 		
 		// wrong resources in the map
 		
+		viewThree = viewTwo.copy();
+		
 		// from B to A instead of A to B
 	 	Map<EObject, EObject> map = findRandomInjection(viewTwo, viewThree);
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, map, viewThree);
+			MappingUtil.getMappingSetIterator(viewTwo, viewOne, map, viewThree);
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The identity map must map from the identityView to the toView.", e.getMessage());
 		}
 		
 		// map does not contain all of the identity view
-		map = findRandomInjection(viewThree, viewTwo);
+		map = findRandomInjection(viewThree, viewOne);
 		
 		List<EObject> eObjects = new ArrayList<>(map.keySet());
 		Collections.shuffle(eObjects);
@@ -467,7 +471,7 @@ class MappingUtilTest extends TestResources {
 		eObjects.forEach(map::remove);
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, map, viewThree);
+			MappingUtil.getMappingSetIterator(viewTwo, viewOne, map, viewThree);
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The identity map must map all elements of the identityView.", e.getMessage());
@@ -513,7 +517,7 @@ class MappingUtilTest extends TestResources {
 	@Test
 	final void testGetMappingSetIteratorOnePosibility() {
 		
-		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "Class");
+		EClass[] eClasses = getEClassFromResource(GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE, "NamedElement", "Class");
 		EClass namedElement = eClasses[0];
 		EClass classEClass = eClasses[1];
 		
@@ -521,22 +525,27 @@ class MappingUtilTest extends TestResources {
 		
 		// get CRAInstanceOne elements
 		
-		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource(
-				CRA_INSTANCE_ONE, 
-				eObject -> eObject.eGet(name).equals("11"),
-				eObject -> eObject.eGet(name).equals("12"),
-				eObject -> eObject.eGet(name).equals("13"),
+		Map<Integer, Set<EObject>> mapOfSets = getEObjectsFromResource (
+				GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I, 
+				eObject -> eObject.eGet(name).equals("1"),
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3")
+		);
+		
+		EObject classModel1 = mapOfSets.get(0).iterator().next();
+		EObject method2 = mapOfSets.get(1).iterator().next();
+		EObject method3 = mapOfSets.get(2).iterator().next();
+		
+		mapOfSets = getEObjectsFromResource (
+				GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI,
 				eObject -> eObject.eGet(name).equals("5"),
 				eObject -> eObject.eGet(name).equals("6"),
 				eObject -> eObject.eGet(name).equals("7")
 		);
 		
-		EObject classModel11 = mapOfSets.get(0).iterator().next();
-		EObject method12 = mapOfSets.get(1).iterator().next();
-		EObject method13 = mapOfSets.get(2).iterator().next();
-		EObject classModel5 = mapOfSets.get(3).iterator().next();
-		EObject method6 = mapOfSets.get(4).iterator().next();
-		EObject method7 = mapOfSets.get(5).iterator().next();
+		EObject classModel5 = mapOfSets.get(0).iterator().next();
+		EObject method6 = mapOfSets.get(1).iterator().next();
+		EObject method7 = mapOfSets.get(2).iterator().next();
 		
 		View fIntersection = new View(GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI);
 		View intersection = new View(GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I);
@@ -551,9 +560,9 @@ class MappingUtilTest extends TestResources {
 		pIntersection.removeDangling();
 		
 		Map<EObject, EObject> map = new HashMap<>();
-		map.put(classModel11, classModel5);
-		map.put(method12, method6);
-		map.put(method13, method7);
+		map.put(classModel1, classModel5);
+		map.put(method2, method6);
+		map.put(method3, method7);
 		
 		Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator(intersection, fIntersection, map, pIntersection);
 		
