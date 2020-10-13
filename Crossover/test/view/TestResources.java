@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
  * @author Benjamin Wagner
  *
  */
-public class ViewPackageTest {
+public class TestResources {
 
 	protected static final String RESOURCE_PATH = "test/resources";
 	protected static Resource SCRUM_PLANNIG_ECORE;

@@ -106,16 +106,18 @@ public class MappingUtil {
 	 * Finds all possible matches from {@link View fromView} to the {@link View toView} that project
 	 * the part in the {@link View identityView} to itself. A <i>match</i> is a set of {@link Mapping mappings}
 	 * from the {@link View#getNodes() nodes} of the {@link View fromView} to those of the {@link View toView}.
+	 * The {@link View fromView} must contain less elements than the {@link View toView}.
 	 * 
 	 * @param fromView the {@link View view} over {@link Resource} <b><i>A</i></b> containing the domain of the mapping
 	 * @param toView  the {@link View}  over {@link Resource} <b><i>B</i></b> containing the codomain of the mapping
 	 * @param identity a {@link Map map} of {@link EObjects eObjects} from {@link Resource} <b><i>A</i></b> to {@link Resource} <b><i>B</i></b>,
-	 * it maps the {@link EObject eObjects} from the {@link View identityView} to those of the {@link View toView}
+	 * it maps the {@link EObject eObjects} from the {@link View identityView} injective to those of the {@link View toView}
 	 * @param identityView a {@link View view} over {@link Resource} <b><i>A</i></b> containing the {@link EObject eObjects}
 	 * and references that are part of the identity, it may contain dangling {@link Edges}
 	 * @return Returns an {@link Iterator} of all possible {@link Mapping matches} satisfying the condition described above.
+	 * @throws IllegalArgumentException when the given parameters don't match the required conditions.
 	 */
-	public static Iterator<Set<Mapping>> getMappingSetIterator (View fromView, View toView, Map<EObject, EObject> identity, View identityView) {
+	public static Iterator<Set<Mapping>> getMappingSetIterator (View fromView, View toView, Map<EObject, EObject> identity, View identityView) throws IllegalArgumentException {
 		// TODO: implement
 		return null;
 	}

@@ -40,7 +40,7 @@ import crossover.Pair;
  * @author Benjamin Wagner
  *
  */
-class ViewFactoryTest extends ViewPackageTest {
+class ViewFactoryTest extends TestResources {
 
 	// BuildViewMapping
 	

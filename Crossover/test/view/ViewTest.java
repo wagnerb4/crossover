@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @author Benjamin Wagner
  *
  */
-class ViewTest extends ViewPackageTest {
+class ViewTest extends TestResources {
 	
 	private View viewOnScrumPlanningInstanceOne;
 
