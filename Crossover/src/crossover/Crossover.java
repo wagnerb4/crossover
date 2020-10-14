@@ -1,5 +1,6 @@
 package crossover;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,6 +96,12 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 */
 	private View intersectionOfSSETwo;
 
+	/**
+	 * Default constructor for testing purposes.
+	 */
+	@SuppressWarnings("unused")
+	private Crossover () {}
+	
 	/**
 	 * Creates a new Crossover between the given {@link ResourceSet searchSpaceElements}.
 	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
@@ -260,29 +267,56 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		while (treeIterator.hasNext()) {
 			EObject eObject = (EObject) treeIterator.next();
 			
-			if(eObject instanceof EClass) {
+			
+			
+			if(eObject instanceof EClass) {	
+				
 				EClass eClass = (EClass) eObject;
+			
+				List<EClass> eClassestoExtend = new ArrayList<>();
+				List<EReference> eReferences = eClass.getEAllReferences();
 				
-				if(!problemPartEClasses.contains(eClass)) {
-					for (EReference eReference: eClass.getEAllReferences()) {
-						EClass neighbouringEClass = eReference.getEReferenceType();
-						if(problemPartEClasses.contains(neighbouringEClass)) {
-							borderView.extend(((EObject) neighbouringEClass));
-						}
-					}
-				}
-				
-				for (EReference eReference : eClass.getEAllReferences()) {
+				for (EReference eReference : eReferences) {
 					if(!problemPartEReferences.contains(eReference)) {
 						
 						if(problemPartEClasses.contains(eReference.getEContainingClass())) {
-							borderView.extend(((EObject) eReference.getEContainingClass()));
+							eClassestoExtend.add(eReference.getEContainingClass());
+						}
+						
+						if(problemPartEClasses.contains(eClass)) {
+							eClassestoExtend.add(eClass);
 						}
 						
 						if(problemPartEClasses.contains(eReference.getEReferenceType())) {
-							borderView.extend(((EObject) eReference.getEReferenceType()));
+							eClassestoExtend.add(eReference.getEReferenceType());
 						}
 						
+					} else {
+						
+						if(!problemPartEClasses.contains(eReference.getEContainingClass())) {
+							borderView.extend(((EObject) eReference));
+							if(problemPartEClasses.contains(eReference.getEReferenceType())) {
+								eClassestoExtend.add(eReference.getEReferenceType());
+							}
+						}
+						
+						if(!problemPartEClasses.contains(eReference.getEReferenceType())) {
+							borderView.extend(((EObject) eReference));
+							if(problemPartEClasses.contains(eReference.getEContainingClass())) {
+								eClassestoExtend.add(eReference.getEContainingClass());
+							}
+							
+							if(problemPartEClasses.contains(eClass)) {
+								eClassestoExtend.add(eClass);
+							}
+						}
+						
+					}
+				}
+				
+				for (EClass eClassToExtend : eClassestoExtend) {
+					if(!eClassToExtend.isAbstract()) {
+						borderView.extend(((EObject) eClassToExtend));
 					}
 				}
 				

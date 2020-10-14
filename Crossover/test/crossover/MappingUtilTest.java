@@ -491,7 +491,7 @@ class MappingUtilTest extends TestResources {
 	 * with the identityView being empty.
 	 */
 	@Test
-	final void testGetMappingSetIteratorOnePosibility() {
+	final void testGetMappingSetIterator() {
 		
 		EClass[] eClasses = getEClassFromResource(GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE, "NamedElement");
 		EClass namedElement = eClasses[0];

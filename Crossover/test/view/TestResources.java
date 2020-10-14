@@ -41,7 +41,7 @@ public class TestResources {
 	 * @throws java.lang.Exception
 	 */
 	@BeforeAll
-	static void setUpBeforeClass() throws Exception {
+	public static void setUpBeforeClass() throws Exception {
 		HenshinResourceSet resourceSet = new HenshinResourceSet(RESOURCE_PATH);
 		SCRUM_PLANNIG_ECORE = resourceSet.getResource("scrumPlanning.ecore");
 		SCRUM_PLANNIG_INSTANCE_ONE = resourceSet.getResource("scrumPlanningInstanceOne.xmi");
