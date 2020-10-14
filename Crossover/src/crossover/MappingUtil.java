@@ -1,5 +1,6 @@
 package crossover;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -7,11 +8,18 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.henshin.interpreter.EGraph;
+import org.eclipse.emf.henshin.interpreter.Engine;
+import org.eclipse.emf.henshin.interpreter.Match;
+import org.eclipse.emf.henshin.interpreter.impl.EngineImpl;
 import org.eclipse.emf.henshin.model.Mapping;
 import org.eclipse.emf.henshin.model.Node;
+import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
+import org.eclipse.emf.henshin.model.impl.RuleImpl;
 
 import view.View;
+import view.ViewFactory;
 
 /**
  * A utility class for working with {@link Set sets} of {@link Mapping mappings}.
@@ -140,6 +148,8 @@ public class MappingUtil {
 			
 			boolean computedNextSet = false;
 			Set<Mapping> nextSet = null;
+			Iterator<Match> matchIterator = null;
+			Map<EObject, EObject> inverseMap = null;
 
 			@Override
 			public boolean hasNext() {
@@ -165,7 +175,72 @@ public class MappingUtil {
 			}
 			
 			private void computeNextSet() {
-				// TODO: implement
+				
+				if (matchIterator == null) {
+					
+					Rule rule = new RuleImpl();
+					rule.setLhs(fromView.getGraph());
+					rule.setCheckDangling(false);
+					rule.setInjectiveMatching(true);
+					
+					Pair<EGraph, Map<EObject, EObject>> pair = ViewFactory.createEGraphFromView(toView);
+					EGraph eGraph = pair.getFirst();
+					Map<EObject, EObject> map = pair.getSecond();
+					inverseMap = new HashMap<>();
+					map.forEach((originalEObject, copiedEObject) -> inverseMap.put(copiedEObject, originalEObject));
+					
+					Engine engine = new EngineImpl();
+					
+					matchIterator = engine.findMatches(rule, eGraph, null).iterator();
+					
+				}
+				
+				if (!matchIterator.hasNext()) {
+					nextSet = null;
+					return;
+				}
+				
+				boolean foundSetOfMappings = false;
+				
+				while (!foundSetOfMappings) {
+					
+					Match match = matchIterator.next();
+					
+					Set<Mapping> mappings = new HashSet<Mapping>();
+					
+					for (Node fromNode : fromView.getGraph().getNodes()) {
+						Mapping mapping = new MappingImpl();
+						mapping.setOrigin(fromNode);
+						mapping.setImage(toView.getNode(inverseMap.get(match.getNodeTarget(fromNode))));
+						mappings.add(mapping);
+					}
+					
+					if (matchCompliesToIdentity(mappings)) {
+						foundSetOfMappings = true;
+						nextSet = mappings;
+					} else {
+						if (!matchIterator.hasNext()) {
+							nextSet = null;
+							return;
+						}
+					}
+					
+				}
+				
+				
+				
+			}
+			
+			private boolean matchCompliesToIdentity (Set<Mapping> mappings) {
+				
+				for (Mapping mapping : mappings) {
+					EObject fromEObject = fromView.getObject(mapping.getOrigin());
+					EObject toEObject = toView.getObject(mapping.getImage());
+					if (identity.containsKey(fromEObject) && identity.get(fromEObject) != toEObject) return false;
+				}
+				
+				return true;
+				
 			}
 			
 		};
