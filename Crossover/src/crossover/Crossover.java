@@ -410,11 +410,10 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 						mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo.put(originEObject, targetEObject);
 					});
 					
-					Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator(
+					Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator (
 							subgraphOfIntersectionOfSSEOne, // from View
 							intersectionOfSSETwo, // to View
-							mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo, // mapping from itentity to "to View"
-							problemPartIntersection // itentity
+							mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo // mapping from itentity to "to View"
 					);
 					
 					spans = new HashSet<CustomSpan>();

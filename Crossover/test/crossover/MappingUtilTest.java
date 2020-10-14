@@ -374,28 +374,21 @@ class MappingUtilTest extends TestResources {
 		// null values
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, null, viewThree);
+			MappingUtil.getMappingSetIterator(viewOne, viewTwo, null);
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The identity map must not be null.", e.getMessage());
 		}
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, new HashMap<EObject, EObject>(), null);
-			fail("Expected an IllegalArgumentException but no was thrown.");
-		} catch (IllegalArgumentException e) {
-			assertEquals("The identity view must not be null.", e.getMessage());
-		}
-		
-		try {
-			MappingUtil.getMappingSetIterator(viewOne, null, new HashMap<EObject, EObject>(), viewThree);
+			MappingUtil.getMappingSetIterator(viewOne, null, new HashMap<EObject, EObject>());
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The toView must not be null.", e.getMessage());
 		}
 		
 		try {
-			MappingUtil.getMappingSetIterator(null, viewTwo, new HashMap<EObject, EObject>(), viewThree);
+			MappingUtil.getMappingSetIterator(null, viewTwo, new HashMap<EObject, EObject>());
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The fromView must not be null.", e.getMessage());
@@ -404,17 +397,10 @@ class MappingUtilTest extends TestResources {
 		// wrong resources in views
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewOne, new HashMap<EObject, EObject>(), viewThree);
+			MappingUtil.getMappingSetIterator(viewOne, viewOne, new HashMap<EObject, EObject>());
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The toView must be over a different resource than the fromView.", e.getMessage());
-		}
-		
-		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, new HashMap<EObject, EObject>(), viewTwo);
-			fail("Expected an IllegalArgumentException but no was thrown.");
-		} catch (IllegalArgumentException e) {
-			assertEquals("The identityView must be over the same resource than the fromView.", e.getMessage());
 		}
 		
 		// get the Stakeholder and Backlog EClass from the metamodel
@@ -441,8 +427,9 @@ class MappingUtilTest extends TestResources {
 		viewTwo.extend(backlogWorkitems);
 		
 		// fromView contains more elements than the toView
+		
 		try {
-			MappingUtil.getMappingSetIterator(viewOne, viewTwo, new HashMap<EObject, EObject>(), viewOne);
+			MappingUtil.getMappingSetIterator(viewOne, viewTwo, new HashMap<EObject, EObject>());
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
 			assertEquals("The fromView must not contain more elements than the toView.", e.getMessage());
@@ -456,25 +443,10 @@ class MappingUtilTest extends TestResources {
 	 	Map<EObject, EObject> map = findRandomInjection(viewTwo, viewThree);
 		
 		try {
-			MappingUtil.getMappingSetIterator(viewTwo, viewOne, map, viewThree);
+			MappingUtil.getMappingSetIterator(viewTwo, viewOne, map);
 			fail("Expected an IllegalArgumentException but no was thrown.");
 		} catch (IllegalArgumentException e) {
-			assertEquals("The identity map must map from the identityView to the toView.", e.getMessage());
-		}
-		
-		// map does not contain all of the identity view
-		map = findRandomInjection(viewThree, viewOne);
-		
-		List<EObject> eObjects = new ArrayList<>(map.keySet());
-		Collections.shuffle(eObjects);
-		eObjects = eObjects.subList(0, eObjects.size() / 2);
-		eObjects.forEach(map::remove);
-		
-		try {
-			MappingUtil.getMappingSetIterator(viewTwo, viewOne, map, viewThree);
-			fail("Expected an IllegalArgumentException but no was thrown.");
-		} catch (IllegalArgumentException e) {
-			assertEquals("The identity map must map all elements of the identityView.", e.getMessage());
+			assertEquals("The identity map must map from the fromView to the toView.", e.getMessage());
 		}
 		
 	}
@@ -517,9 +489,8 @@ class MappingUtilTest extends TestResources {
 	@Test
 	final void testGetMappingSetIteratorOnePosibility() {
 		
-		EClass[] eClasses = getEClassFromResource(GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE, "NamedElement", "Class");
+		EClass[] eClasses = getEClassFromResource(GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE, "NamedElement");
 		EClass namedElement = eClasses[0];
-		EClass classEClass = eClasses[1];
 		
 		EAttribute name = getEAttributeFromEClass(namedElement, "name");
 		
@@ -555,16 +526,12 @@ class MappingUtilTest extends TestResources {
 		intersection.extendByAllNodes();
 		intersection.extendByMissingEdges();
 		
-		View pIntersection = intersection.copy();
-		pIntersection.reduce(classEClass);
-		pIntersection.removeDangling();
-		
 		Map<EObject, EObject> map = new HashMap<>();
 		map.put(classModel1, classModel5);
 		map.put(method2, method6);
 		map.put(method3, method7);
 		
-		Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator(intersection, fIntersection, map, pIntersection);
+		Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator(intersection, fIntersection, map);
 		
 		assertTrue(mappingSetIterator.hasNext());
 		Set<Mapping> mappings = mappingSetIterator.next();
