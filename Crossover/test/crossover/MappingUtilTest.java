@@ -50,6 +50,8 @@ class MappingUtilTest extends TestResources {
 	
 	private static Resource GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI;
 	private static Resource GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I;
+	private static Resource GET_MAPPING_SET_ITERATOR_TEST_2_CRA_INSTANCE_I;
+	private static Resource GET_MAPPING_SET_ITERATOR_TEST_3_CRA_INSTANCE_I;
 	private static Resource GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE;
 	
 	// setup
@@ -63,6 +65,8 @@ class MappingUtilTest extends TestResources {
 		GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE = resourceSet.getResource("CRA.ecore");
 		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_FI.xmi");
 		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_I.xmi");
+		GET_MAPPING_SET_ITERATOR_TEST_2_CRA_INSTANCE_I = resourceSet.getResource("GetMappingSetIteratorTest_2_CRAInstance_I.xmi");
+		GET_MAPPING_SET_ITERATOR_TEST_3_CRA_INSTANCE_I = resourceSet.getResource("GetMappingSetIteratorTest_3_CRAInstance_I.xmi");
 	}
 	
 	private Set<Mapping> initRandomMapping (int size) {
@@ -562,6 +566,80 @@ class MappingUtilTest extends TestResources {
 			
 		}
 		
+		View intersectionTwo = new View(GET_MAPPING_SET_ITERATOR_TEST_2_CRA_INSTANCE_I);
+		intersectionTwo.extendByAllNodes();
+		intersectionTwo.extendByMissingEdges();
+		
+		mapOfSets = getEObjectsFromResource (
+				GET_MAPPING_SET_ITERATOR_TEST_2_CRA_INSTANCE_I, 
+				eObject -> eObject.eGet(name).equals("1"),
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3")
+		);
+		
+		classModel1 = mapOfSets.get(0).iterator().next();
+		method2 = mapOfSets.get(1).iterator().next();
+		method3 = mapOfSets.get(2).iterator().next();
+		
+		map.clear();
+		map.put(classModel1, classModel5);
+		map.put(method2, method6);
+		map.put(method3, method7);
+		
+		mappingSetIterator = MappingUtil.getMappingSetIterator(intersectionTwo, fIntersection, map);
+		
+		assertTrue(mappingSetIterator.hasNext());
+		mappings = mappingSetIterator.next();
+		assertFalse(mappingSetIterator.hasNext());
+		
+		for (Mapping mapping : mappings) {
+			EObject originEObject = intersectionTwo.getObject(mapping.getOrigin());
+			EObject imageEObject = fIntersection.getObject(mapping.getImage());
+			String originName = (String) originEObject.eGet(name);
+			String imageName = (String) imageEObject.eGet(name);
+			
+			switch (originName) {
+				case "1":
+					assertEquals("5", imageName);
+					break;
+				case "2":
+					assertEquals("6", imageName);
+					break;
+				case "3":
+					assertEquals("7", imageName);
+					break;
+				case "4":
+					assertEquals("10", imageName);
+					break;
+				default:
+					fail("Unexpected name: " + originName);
+			}
+			
+		}
+		
+		View intersectionThree = new View(GET_MAPPING_SET_ITERATOR_TEST_3_CRA_INSTANCE_I);
+		intersectionThree.extendByAllNodes();
+		intersectionThree.extendByMissingEdges();
+		
+		mapOfSets = getEObjectsFromResource (
+				GET_MAPPING_SET_ITERATOR_TEST_3_CRA_INSTANCE_I, 
+				eObject -> eObject.eGet(name).equals("1"),
+				eObject -> eObject.eGet(name).equals("2"),
+				eObject -> eObject.eGet(name).equals("3")
+		);
+		
+		classModel1 = mapOfSets.get(0).iterator().next();
+		method2 = mapOfSets.get(1).iterator().next();
+		method3 = mapOfSets.get(2).iterator().next();
+		
+		map.clear();
+		map.put(classModel1, classModel5);
+		map.put(method2, method6);
+		map.put(method3, method7);
+		
+		mappingSetIterator = MappingUtil.getMappingSetIterator(intersectionThree, fIntersection, map);
+		
+		assertFalse(mappingSetIterator.hasNext());
 		
 	}
 	
