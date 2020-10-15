@@ -208,9 +208,16 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @param problemBorder a {@link View} of the meta-model of the {@link View#resouce resouce} 
 	 * in the {@link View problemPartView} containing the border of the problem part that is
 	 * adjacent to the solution part
+	 * @param strategy a {@link Strategy} that is applied to the problem border of the {@link View problemPartView}
+	 * in order to customize the split
 	 * @return Returns a {@link Pair pair} of {@link View views} over the same
 	 * {@link View#resource} as the given {@link View problemPartView}, each representing
-	 * one part of the split.
+	 * one part of the split. The first split element view will contain the, by the given {@link Strategy strategy}
+	 * modified {@link View problemBorder} and will never contain dangling edges. The second view consists of
+	 * all elements such that two conditions are satisfied. Firstly, their union yields a view equal to the 
+	 * given {@link View problemPartView} and secondly the second split element contains a
+	 * minimal number of dangling edges. The second split element contains dangling edges if and only if the {@link View problemPartView}
+	 * contains border edges (i.e edges that are adjacent to solution part nodes).
 	 * @throws ViewSetOperationException  if a set-operation on a view was not successfull
 	 * @throws IllegalStateException if general operation on a view was not successfull
 	 */
@@ -221,6 +228,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		if(!matchedSuccessfully) throw new IllegalStateException("The border counldn't be matched.");
 		View remainderView = problemPartView.copy();
 		remainderView.subtract(matchedBorder);
+		remainderView.removeDangling();
 		
 		View problemPartOne = remainderView.copy();
 		View problemPartTwo = remainderView.copy();
@@ -235,15 +243,31 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			EObject sourceEObject = problemPartView.getObject(edge.getSource());
 			EObject targetEObject = problemPartView.getObject(edge.getTarget());
 			if(problemPartOne.contains(sourceEObject) && problemPartOne.contains(targetEObject)) {
-				boolean addedSuccessfully = problemPartOne.extend(sourceEObject, targetEObject, edge.getType());
-				if(!addedSuccessfully) addedSuccessfully = problemPartOne.extend(targetEObject, sourceEObject, edge.getType());
-				if(!addedSuccessfully) throw new IllegalStateException("Couldn't add an edge to problemPartOne.");
+				if (!problemPartOne.contains(sourceEObject, targetEObject, edge.getType(), false)) {
+					boolean addedSuccessfully = problemPartOne.extend(sourceEObject, targetEObject, edge.getType());
+					if(!addedSuccessfully) addedSuccessfully = problemPartOne.extend(targetEObject, sourceEObject, edge.getType());
+					if(!addedSuccessfully) throw new IllegalStateException("Couldn't add an edge to problemPartOne.");
+				}
 			}
 		}
 		
 		View notProblemPartOne = problemPartView.copy();
 		notProblemPartOne.subtract(problemPartOne);
 		problemPartTwo.union(notProblemPartOne);
+		// problemPartTwo.union(problemPartOne) biw results in a view equal to problemPartView
+		
+		problemPartTwo.completeDangling();
+		// problemPartTwo doesn't contain dangling edges anymore but it may contain non problemPart nodes
+		
+		List<EObject> toRemove = new ArrayList<>();
+		for (Node node : problemPartTwo.getGraph().getNodes()) {
+			EObject eObject = problemPartTwo.getObject(node);
+			if (!problemPartView.contains(eObject)) {
+				toRemove.add(eObject);
+			}
+		}
+		
+		toRemove.forEach(problemPartTwo::reduce);
 		
 		return new Pair<View, View>(problemPartOne, problemPartTwo);
 		

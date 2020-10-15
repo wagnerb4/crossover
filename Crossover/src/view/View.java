@@ -829,45 +829,34 @@ public class View {
 	 */
 	public boolean matchViewByMetamodel(View viewOnMetamodel) {
 		
-		List<EObject> contets = viewOnMetamodel.resource.getContents();
-		
-		if (!contets.isEmpty()) {
-			if (contets.get(0) instanceof EPackage) {
-				
-				EPackage ePackage = (EPackage) contets.get(0);
-				EList<EClassifier> classifiers = ePackage.getEClassifiers();
-				
-				Set<EClass> eClasses = classifiers.stream().
-						filter(classifier -> classifier instanceof EClass).
-						map(classifier -> (EClass) classifier).
-						collect(Collectors.toSet());
-				
-				TreeIterator<EObject> treeIterator = this.resource.getAllContents();
-				
-				while (treeIterator.hasNext()) {
-					EObject eObject = (EObject) treeIterator.next();
-					if(!eClasses.contains(eObject.eClass()))
-						return false; // the meta-model does not match the resource 
-				}
-				
-				clear();
-				
-				for (Node node : viewOnMetamodel.graph.getNodes()) {
-					EObject eObject = viewOnMetamodel.getObject(node);
-					if (eObject instanceof EClass)
-						extend(((EClass) eObject));
-					if (eObject instanceof EReference)
-						extend(((EReference) eObject));
-				}
-				
-				return true;
-				
-			} else {
-				return false;
-			}
-		} else {
-			return true;
+		Set<EClass> eClasses = new HashSet<>();
+		TreeIterator<EObject> treeIterator = viewOnMetamodel.resource.getAllContents();
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			if (eObject instanceof EClass) eClasses.add((EClass) eObject);
 		}
+		
+		if (eClasses.isEmpty()) return false;
+			
+		treeIterator = this.resource.getAllContents();
+		
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			if(!eClasses.contains(eObject.eClass()))
+				return false; // the meta-model does not match the resource 
+		}
+		
+		clear();
+		
+		for (Node node : viewOnMetamodel.graph.getNodes()) {
+			EObject eObject = viewOnMetamodel.getObject(node);
+			if (eObject instanceof EClass)
+				extend(((EClass) eObject));
+			if (eObject instanceof EReference)
+				extend(((EReference) eObject));
+		}
+		
+		return true;
 		
 	}
 	
@@ -932,10 +921,27 @@ public class View {
 		return contains(foundEdge, isDangling);
 	}
 
+	
 	@Override
-	public boolean equals(Object obj) {
+	public int hashCode () {
 		
-		if (!(obj instanceof View)) return false;
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((graph == null) ? 0 : graph.hashCode());
+		result = prime * result + ((graphMap == null) ? 0 : graphMap.hashCode());
+		result = prime * result + ((objectMap == null) ? 0 : objectMap.hashCode());
+		result = prime * result + ((resource == null) ? 0 : resource.hashCode());
+		return result;
+		
+	}
+
+	@Override
+	public boolean equals (Object obj) {
+		
+		if (this == obj)
+			return true;
+		if (!(obj instanceof View))
+			return false;
 		
 		View view = (View) obj;
 		if (!view.resource.equals(resource)) return false;
