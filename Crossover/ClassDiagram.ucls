@@ -93,22 +93,21 @@
     </display>  
   </class>  
   <association id="12">    
-    <bendpoint x="1192" y="304"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="13" name="splitOfSSETwo">        
-        <position height="15" width="78" x="1200" y="439"/>      
+    <end type="SOURCE" refId="5" navigable="false">      
+      <attribute id="13" name="savedState">        
+        <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="14" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
+    <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="15">    
-    <bendpoint x="458" y="537"/>    
+    <bendpoint x="468" y="616"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="16" name="problemPartIntersection">        
+      <attribute id="16" name="intersectionOfSSETwo">        
         <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="17" minimum="0" maximum="1">        
@@ -119,9 +118,10 @@
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="18">    
+    <bendpoint x="1192" y="304"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="19" name="splitOfSSEOne">        
-        <position height="15" width="78" x="1050" y="465"/>      
+      <attribute id="19" name="splitOfSSETwo">        
+        <position height="15" width="78" x="1200" y="439"/>      
       </attribute>      
       <multiplicity id="20" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
@@ -131,9 +131,10 @@
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="21">    
-    <end type="SOURCE" refId="5" navigable="false">      
-      <attribute id="22" name="savedState">        
-        <position height="0" width="0" x="0" y="0"/>      
+    <bendpoint x="461" y="329"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="22" name="intersectionOfSSEOne">        
+        <position height="15" width="114" x="358" y="409"/>      
       </attribute>      
       <multiplicity id="23" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
@@ -156,23 +157,23 @@
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="27">    
-    <bendpoint x="928" y="677"/>    
+    <bendpoint x="458" y="537"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="28" name="problemSplitSSETwo">        
-        <position height="15" width="107" x="996" y="656"/>      
+      <attribute id="28" name="problemPartIntersection">        
+        <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="29" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
+    <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="30">    
-    <bendpoint x="461" y="329"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="31" name="intersectionOfSSEOne">        
-        <position height="15" width="114" x="358" y="409"/>      
+    <bendpoint x="458" y="726"/>    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="31" name="intersection">        
+        <position height="0" width="0" x="0" y="0"/>      
       </attribute>      
       <multiplicity id="32" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
@@ -182,54 +183,53 @@
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="33">    
-    <bendpoint x="468" y="616"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="34" name="intersectionOfSSETwo">        
-        <position height="0" width="0" x="0" y="0"/>      
+      <attribute id="34" name="splitOfSSEOne">        
+        <position height="15" width="78" x="1050" y="465"/>      
       </attribute>      
       <multiplicity id="35" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="36">    
-    <bendpoint x="946" y="534"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="37" name="problemSplitSSEOne">        
-        <position height="15" width="107" x="950" y="561"/>      
-      </attribute>      
-      <multiplicity id="38" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="39">    
+  <association id="36">    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="40" name="problemPartSSEOne">        
+      <attribute id="37" name="problemPartSSEOne">        
         <position height="15" width="107" x="354" y="475"/>      
       </attribute>      
-      <multiplicity id="41" minimum="0" maximum="1">        
+      <multiplicity id="38" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="42">    
-    <bendpoint x="458" y="726"/>    
-    <end type="SOURCE" refId="11" navigable="false">      
-      <attribute id="43" name="intersection">        
+  <association id="39">    
+    <bendpoint x="928" y="677"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="40" name="problemSplitSSETwo">        
+        <position height="15" width="107" x="996" y="656"/>      
+      </attribute>      
+      <multiplicity id="41" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="7" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="42">    
+    <bendpoint x="946" y="534"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="43" name="problemSplitSSEOne">        
+        <position height="15" width="107" x="950" y="561"/>      
       </attribute>      
       <multiplicity id="44" minimum="0" maximum="1">        
         <position height="0" width="0" x="0" y="0"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
+    <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 

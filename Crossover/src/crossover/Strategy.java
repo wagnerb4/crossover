@@ -1,16 +1,22 @@
 package crossover;
 
 import view.View;
+import view.ViewSetOperationException;
 
 /**
- * The strategy used in the {@link Crossover} for splitting up the problem part.
- * A strategy is supposed to reduce the View by EObjects and References between them
- * thus resulting
+ * A strategy is used in the {@link Crossover} Class for splitting up views.
  * 
  * @author Benjamin Wagner
+ * @see Strategy#apply(View)
  */
 public interface Strategy {
 	
-	void apply (View view);
+	/**
+	 * Applies the stategy on the given {@link View} changing it in the process.
+	 * @param view the {@link View} to apply the strategy on
+	 * @throws ViewSetOperationException in case set operations an a {@link View} used in the strategy fail
+	 * @throws IllegalStateException in case a gerneral operation on a {@link view} failes
+	 */
+	void apply (View view) throws ViewSetOperationException, IllegalStateException;
 
 }

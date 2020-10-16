@@ -36,6 +36,31 @@ import view.ViewSetOperationException;
 public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	
 	/**
+	 * The default strategy used in splitting up the search space elements. 
+	 * It uses a depth first search in order to find all of the elements from 
+	 * the solution part which are in connected components with the first part of the problem split.
+	 */
+	public static final SearchSpaceElementSplitStrategy DEFAULT_STRATEGY = new SearchSpaceElementSplitStrategy () {
+		@Override
+		public void apply (View searchSpaceElementOne) throws ViewSetOperationException {
+			
+			View tempProblemSplitOne = super.problemSplitPart.copy();
+			View tempSearchSpaceElementOne = new View(searchSpaceElementOne.getResource());
+			
+			while (!tempProblemSplitOne.isEmpty()) {
+				EObject randomNode = tempProblemSplitOne.getObject(tempProblemSplitOne.getRandomNode());
+				View connectedComponentOfSearchSpaceElementOne = ViewFactory.doDFS(searchSpaceElementOne, searchSpaceElementOne.getNode(randomNode));
+				tempProblemSplitOne.subtract(connectedComponentOfSearchSpaceElementOne);
+				tempSearchSpaceElementOne.union(connectedComponentOfSearchSpaceElementOne);
+			}
+			
+			searchSpaceElementOne.intersect(new View(searchSpaceElementOne.getResource()));
+			searchSpaceElementOne.union(tempSearchSpaceElementOne);
+			
+		}
+	};
+	
+	/**
 	 * The {@link View view} over the {@link View#resource resource} that represents
 	 * the first search space element and contains its the problem part.
 	 */
@@ -70,14 +95,14 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	/**
 	 * A {@link Pair pair} of {@link View views} over the {@link View#resource resource} that represents
 	 * the first search space element, each containing parts according to
-	 * {@link Crossover#splitSearchSpaceElement(View, Pair)}.
+	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy)}.
 	 */
 	private Pair<View, View> splitOfSSEOne;
 	
 	/**
 	 * A {@link Pair pair} of {@link View views} over the {@link View#resource resource} that represents
 	 * the second search space element, each containing parts according to
-	 * {@link Crossover#splitSearchSpaceElement(View, Pair)}.
+	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy)}.
 	 */
 	private Pair<View, View> splitOfSSETwo;
 	
@@ -106,14 +131,16 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * Creates a new Crossover between the given {@link ResourceSet searchSpaceElements}.
 	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
 	 * @param searchSpaceElements the search space elements to do the crossover on
-	 * @param strategy the strategy to split the problem part with
+	 * @param problemPartSplitStrategy the strategy used to split up the problem part
 	 * @param problemPartEClasses a {@link List list} of {@link EClass eClasses} describing the problem part
 	 * @param problemPartEReferences a {@link List list} of {@link EReference eReferences} describing the problem part
+	 * @param searchSpaceElementSplitStrategy the strategy usedto split up the search space elements
 	 * @throws CrossoverUsageException if one of the parameters is null or the metamodel or searchSpaceElements are empty.
 	 * @throws ViewSetOperationException on a set operation of a view
 	 */
-	public Crossover (Resource metamodel, ResourceSet searchSpaceElements, Strategy strategy,
-			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences
+	public Crossover (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
+			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy
 			) throws CrossoverUsageException, ViewSetOperationException {
 		
 		// checking parameters
@@ -125,7 +152,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		if(searchSpaceElements.getResources().size() != 2) 
 			throw new CrossoverUsageException("The searchSpaceElements ResourceSet has to contain exactly two resources."
 					+ "One for each search space element.");
-		if(strategy == null)
+		if(problemPartSplitStrategy == null)
 			throw new CrossoverUsageException("The strategy must not be null.");
 		if(problemPartEClasses == null)
 			throw new CrossoverUsageException("The problemPartEClasses must not be null.");
@@ -147,7 +174,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		View problemBorder = findBorder(metamodel, problemPartEClasses, problemPartEReferences);
 		
-		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder, strategy);
+		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder, problemPartSplitStrategy);
 		this.problemSplitSSETwo = new Pair<View, View> (
 				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, 
 						MappingUtil.mapByOrigin(problemPartMappings, origin -> this.problemSplitSSEOne.getFirst().
@@ -161,8 +188,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		// split the search space elements according to the problem split
 		
-		this.splitOfSSEOne = splitSearchSpaceElement(problemPartSSEOne, problemSplitSSEOne);
-		this.splitOfSSETwo = splitSearchSpaceElement(problemPartSSETwo, problemSplitSSETwo);
+		this.splitOfSSEOne = splitSearchSpaceElement(problemPartSSEOne, problemSplitSSEOne, searchSpaceElementSplitStrategy);
+		this.splitOfSSETwo = splitSearchSpaceElement(problemPartSSETwo, problemSplitSSETwo, searchSpaceElementSplitStrategy);
 		
 		// compute the intersections
 		
@@ -358,13 +385,17 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * same resource.
 	 * @param problemPart the {@link View view} respresenting the complete problem part
 	 * @param problemSplit the split of the {@link View problemPart}
+	 * @param strategy the {@link SearchSpaceElementSplitStrategy} used for extending the first split
+	 * element by solution part elements. This results in the final first split view. The second split element
+	 * is computed based on the first one such that the intersection of the two parts is minimal but their union
+	 * yields the complete search space element.
 	 * @return Returns a {@link Pair pair} of two new {@link View views} on the same 
 	 * {@link View#resource resource} as the given {@link View views} representing the split of
 	 * the search space element. The first element of the split contains the first element of the given
 	 * {@link Pair problemSplit} and the second element of the split contains the second.
 	 * @throws ViewSetOperationException if a set-operation on a view was not successfull
 	 */
-	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit) throws ViewSetOperationException {
+	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, SearchSpaceElementSplitStrategy strategy) throws ViewSetOperationException {
 		
 		View searchSpaceElement = problemPart.copy();
 		searchSpaceElement.extendByAllNodes();
@@ -375,24 +406,22 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		searchSpaceElementOne.union(problemSplit.getFirst());
 		searchSpaceElementOne.removeDangling();
 		
-		View tempProblemSplitOne = problemSplit.getFirst().copy();
-		View tempSearchSpaceElementOne = new View(searchSpaceElementOne.getResource());
-		
-		while (!tempProblemSplitOne.isEmpty()) {
-			EObject randomNode = tempProblemSplitOne.getObject(tempProblemSplitOne.getRandomNode());
-			View connectedComponentOfSearchSpaceElementOne = ViewFactory.doDFS(searchSpaceElementOne, searchSpaceElementOne.getNode(randomNode));
-			tempProblemSplitOne.subtract(connectedComponentOfSearchSpaceElementOne);
-			tempSearchSpaceElementOne.union(connectedComponentOfSearchSpaceElementOne);
-		}
-		
-		searchSpaceElementOne = tempSearchSpaceElementOne;
+		strategy.setProblemSplitPart(problemSplit.getFirst());
+		strategy.apply(searchSpaceElementOne);
 		
 		View searchSpaceElementTwo = searchSpaceElement.copy();
 		searchSpaceElementTwo.subtract(problemPart);
 		searchSpaceElementTwo.subtract(searchSpaceElementOne);
 		searchSpaceElementTwo.union(problemSplit.getSecond());
-		searchSpaceElementTwo.extendByMissingEdges();
 		searchSpaceElementTwo.completeDangling();
+		searchSpaceElementTwo.extendByMissingEdges();
+		
+		// remove all edges in searchSpaceElementOne from searchSpaceElementTwo
+		View tmpView = new View(searchSpaceElementOne.getResource());
+		tmpView.extendByAllNodes();
+		View tmpViewTwo = searchSpaceElementOne.copy();
+		tmpViewTwo.subtract(tmpView);
+		searchSpaceElementTwo.subtract(tmpViewTwo);
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		
