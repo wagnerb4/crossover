@@ -360,17 +360,18 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @param problemSplit the split of the {@link View problemPart}
 	 * @return Returns a {@link Pair pair} of two new {@link View views} on the same 
 	 * {@link View#resource resource} as the given {@link View views} representing the split of
-	 * the search space element.
+	 * the search space element. The first element of the split contains the first element of the given
+	 * {@link Pair problemSplit} and the second element of the split contains the second.
 	 * @throws ViewSetOperationException if a set-operation on a view was not successfull
 	 */
 	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit) throws ViewSetOperationException {
 		
 		View searchSpaceElement = problemPart.copy();
 		searchSpaceElement.extendByAllNodes();
-		searchSpaceElement.completeDangling();
-		searchSpaceElement.subtract(problemPart);
+		searchSpaceElement.extendByMissingEdges();
 		
 		View searchSpaceElementOne = searchSpaceElement.copy();
+		searchSpaceElementOne.subtract(problemPart);
 		searchSpaceElementOne.union(problemSplit.getFirst());
 		searchSpaceElementOne.removeDangling();
 		
@@ -380,9 +381,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		while (!tempProblemSplitOne.isEmpty()) {
 			EObject randomNode = tempProblemSplitOne.getObject(tempProblemSplitOne.getRandomNode());
 			View connectedComponentOfSearchSpaceElementOne = ViewFactory.doDFS(searchSpaceElementOne, searchSpaceElementOne.getNode(randomNode));
-			connectedComponentOfSearchSpaceElementOne.intersect(tempProblemSplitOne);
 			tempProblemSplitOne.subtract(connectedComponentOfSearchSpaceElementOne);
-			tempProblemSplitOne.union(connectedComponentOfSearchSpaceElementOne);
+			tempSearchSpaceElementOne.union(connectedComponentOfSearchSpaceElementOne);
 		}
 		
 		searchSpaceElementOne = tempSearchSpaceElementOne;
@@ -392,6 +392,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		searchSpaceElementTwo.subtract(searchSpaceElementOne);
 		searchSpaceElementTwo.union(problemSplit.getSecond());
 		searchSpaceElementTwo.extendByMissingEdges();
+		searchSpaceElementTwo.completeDangling();
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		

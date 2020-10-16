@@ -18,6 +18,8 @@ import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature.Setting;
+import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.Test;
 
@@ -214,8 +216,125 @@ class CrossoverTest extends TestResources {
 	 * Test method for {@link Crossover#splitSearchSpaceElement(View,Pair)}.
 	 */
 	@Test
-	final void testSplitSearchSpaceElement() {
-		fail("Not yet implemented"); // TODO
+	final void testSplitSearchSpaceElement() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException, ViewSetOperationException {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference classEncapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("3"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("8"),
+				eObject -> eObject.eGet(nameEAttribute).equals("9"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2 = map.get(0).iterator().next();
+		EObject method3 = map.get(1).iterator().next();
+		EObject attribute4 = map.get(2).iterator().next();
+		EObject class8 = map.get(3).iterator().next();
+		EObject classModel1 = map.get(5).iterator().next();
+		
+		// modify the classModel such that there is no connection between the classmodel and the classes
+		// this needs to be done on the resouce itself and not on a view as the method extend the given
+		// problemPartView by all available nodes and edges
+		Setting eSetting = ((InternalEObject) classModel1).eSetting(classModelClasses);
+		Object value = eSetting.get(true);
+		eSetting.unset();
+		
+		// create problemView and split
+		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		View problemPartView = new View(CRA_INSTANCE_ONE);
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		View first = problemPartView.copy();
+		View second = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		Pair<View, View> problemSplit = new Pair<View, View>(first, second);
+		
+		View expectedFirst = first.copy();
+		expectedFirst.extend(class8);
+		expectedFirst.extend(class8, method2, classEncapsulates);
+		expectedFirst.extend(class8, method3, classEncapsulates);
+		
+		View expectedSecond = second.copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extendByMissingEdges();
+		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit);
+		
+		// having a direct connection between the classModel and the classes should change the outcome of the method
+		eSetting.set(value);
+		
+		expectedFirst = first.copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = second.copy();
+		expectedSecond.extend(class8);
+		expectedSecond.extendByMissingEdges();
+		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit);
+		
+	}
+	
+	/**
+	 * Runs the {@link Crossover#splitSearchSpaceElement} method with the given {@link View problemPart} and {@link Pair problemSplit}.
+	 * Asserts the returned split to be equal to the {@link Pair expectedSplit}.
+	 * @param problemPart the {@link View view} of the problem part to use in the method call
+	 * @param problemSplit the problemSplit-{@link Pair pair} to use in the method call
+	 * @param expectedSplit the expected problem split of the search space element given indirectly by the {@link View#resource resource}
+	 * in of the {@link View problemPart}
+	 */
+	private void runSplitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, Pair<View, View> expectedSplit) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+																																ViewSetOperationException, NoSuchMethodException, SecurityException, InstantiationException {
+		
+		// get an instance of the private splitSearchSpaceElement method
+		Class<Crossover> clazz = Crossover.class;
+		Constructor<Crossover> crossoverConstructor = clazz.getDeclaredConstructor(new Class[0]);
+		crossoverConstructor.setAccessible(true);
+		Crossover crossover = crossoverConstructor.newInstance();
+		Method splitSearchSpaceElement = clazz.getDeclaredMethod("splitSearchSpaceElement", View.class, Pair.class);
+		splitSearchSpaceElement.setAccessible(true);
+		
+		// invoke the method
+		@SuppressWarnings("unchecked")
+		Pair<View, View> actualSearchSpaceElementSplit = (Pair<View, View>) splitSearchSpaceElement.invoke(crossover, problemPart, problemSplit);
+		
+		View expectedSearchSpaceElement = new View(problemPart.getResource());
+		expectedSearchSpaceElement.extendByAllNodes();
+		expectedSearchSpaceElement.extendByMissingEdges();
+		View actualCombinedView = actualSearchSpaceElementSplit.getFirst().copy();
+		actualCombinedView.union(actualSearchSpaceElementSplit.getSecond());
+		assertTrue(actualCombinedView.equals(expectedSearchSpaceElement));
+		
+		assertTrue(actualSearchSpaceElementSplit.equals(expectedSplit));
+		
 	}
 	
 	/**

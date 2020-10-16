@@ -14,9 +14,7 @@ import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
-import org.eclipse.emf.ecore.EClassifier;
 import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.model.Edge;
@@ -921,7 +919,6 @@ public class View {
 		return contains(foundEdge, isDangling);
 	}
 
-	
 	@Override
 	public int hashCode () {
 		
