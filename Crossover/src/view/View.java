@@ -920,6 +920,12 @@ public class View {
 	}
 
 	@Override
+	public String toString() {
+		return "View [" + (resource != null ? "resource=" + resource.hashCode() + ", " : "")
+				+ (graph != null ? "graph=" + graph.getNodes().toString() + graph.getEdges().toString() + ", " : "") + "]";
+	}
+	
+	@Override
 	public int hashCode () {
 		
 		final int prime = 31;

@@ -249,6 +249,8 @@ class CrossoverTest extends TestResources {
 		EObject class9 = map.get(4).iterator().next();
 		EObject classModel1 = map.get(5).iterator().next();
 		
+		//  classModelClasses EReference in problem part
+		
 		// create problemView and split
 		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
@@ -258,9 +260,10 @@ class CrossoverTest extends TestResources {
 		problemPartReferences.forEach(problemPartView::extend);
 		
 		View first = problemPartView.copy();
-		View second = problemPartView.copy();
 		first.reduce(attributeEClass);
 		first.removeDangling();
+		
+		View second = problemPartView.copy();
 		second.reduce(methodEClass);
 		second.removeDangling();
 		second.extend(method2);
@@ -278,6 +281,42 @@ class CrossoverTest extends TestResources {
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit, Crossover.DEFAULT_STRATEGY);
+		
+		//  classModelClasses EReference in solution part
+		
+		problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		problemPartView = new View(CRA_INSTANCE_ONE);
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		first = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		
+		second = problemPartView.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		
+		problemSplit = new Pair<View, View>(first, second);
+		
+		expectedFirst = first.copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = second.copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8, attribute4, classEncapsulates);
+		expectedSecond.extend(class9, attribute5, classEncapsulates);
+		expectedSecond.reduce(classModel1, class8,classModelClasses);
+		expectedSecond.reduce(classModel1, class9,classModelClasses);
+		
+		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
 		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit, Crossover.DEFAULT_STRATEGY);
 		
@@ -308,7 +347,9 @@ class CrossoverTest extends TestResources {
 		@SuppressWarnings("unchecked")
 		Pair<View, View> actualSearchSpaceElementSplit = (Pair<View, View>) splitSearchSpaceElement.invoke(crossover, problemPart, problemSplit, strategy);
 		
-		assertTrue(actualSearchSpaceElementSplit.equals(expectedSplit));
+		if (!actualSearchSpaceElementSplit.equals(expectedSplit)) {
+			fail("Actual: " + actualSearchSpaceElementSplit.toString() + "; Expected: " + expectedSplit.toString());
+		}
 		
 	}
 	

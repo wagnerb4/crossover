@@ -414,14 +414,17 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		searchSpaceElementTwo.subtract(searchSpaceElementOne);
 		searchSpaceElementTwo.union(problemSplit.getSecond());
 		searchSpaceElementTwo.completeDangling();
-		searchSpaceElementTwo.extendByMissingEdges();
 		
 		// remove all edges in searchSpaceElementOne from searchSpaceElementTwo
-		View tmpView = new View(searchSpaceElementOne.getResource());
-		tmpView.extendByAllNodes();
-		View tmpViewTwo = searchSpaceElementOne.copy();
-		tmpViewTwo.subtract(tmpView);
-		searchSpaceElementTwo.subtract(tmpViewTwo);
+		for (Edge edge : searchSpaceElementOne.getGraph().getEdges()) {
+			EObject sourceEObject = searchSpaceElementOne.getObject(edge.getSource());
+			EObject targetEObject = searchSpaceElementOne.getObject(edge.getTarget());
+			if (searchSpaceElementTwo.contains(sourceEObject, targetEObject, edge.getType(), false)) {
+				boolean removedEdge = searchSpaceElementTwo.reduce(sourceEObject, targetEObject, edge.getType());
+				if(!removedEdge) removedEdge = searchSpaceElementTwo.reduce(targetEObject, sourceEObject, edge.getType());
+				if(!removedEdge) throw new IllegalStateException("Cannot remove an edge.");
+			}
+		}
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		

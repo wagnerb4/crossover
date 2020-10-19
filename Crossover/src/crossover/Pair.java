@@ -29,6 +29,11 @@ public class Pair<K, V> {
 		return second;
 	}
 
+	@Override
+	public String toString() {
+		return "Pair [" + (first != null ? "first=" + first + ", " : "") + (second != null ? "second=" + second : "")
+				+ "]";
+	}
 	
 	@Override
 	public int hashCode() {
@@ -40,8 +45,7 @@ public class Pair<K, V> {
 		return result;
 		
 	}
-	
-
+		
 	@Override
 	public boolean equals(Object obj) {
 		
