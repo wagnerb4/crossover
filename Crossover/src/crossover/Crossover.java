@@ -44,6 +44,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		@Override
 		public void apply (View searchSpaceElementOne) throws ViewSetOperationException {
 			
+			searchSpaceElementOne.removeDangling();
+			
 			View tempProblemSplitOne = super.problemSplitPart.copy();
 			View tempSearchSpaceElementOne = new View(searchSpaceElementOne.getResource());
 			
@@ -54,7 +56,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 				tempSearchSpaceElementOne.union(connectedComponentOfSearchSpaceElementOne);
 			}
 			
-			searchSpaceElementOne.intersect(new View(searchSpaceElementOne.getResource()));
+			searchSpaceElementOne.clear();
 			searchSpaceElementOne.union(tempSearchSpaceElementOne);
 			
 		}
@@ -270,8 +272,9 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * adjacent to the solution part
 	 * @param strategy a {@link Strategy} that is applied to the problem border of the {@link View problemPartView}
 	 * in order to customize the split
-	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances of the contained meta-model elements
-	 * are part of both retuned problem part split elements
+	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances (i.e nodes and non-dangling edges) 
+	 * of the contained meta-model elements are part of both returned problem part split elements dangling instance-edges are only
+	 * added to the second problem part split
 	 * @return Returns a {@link Pair pair} of {@link View views} over the same
 	 * {@link View#resource} as the given {@link View problemPartView}, each representing
 	 * one part of the split. The first split element view will contain the, by the given {@link Strategy strategy}
@@ -305,6 +308,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		View problemPartOne = remainderView.copy();
 		problemPartOne.union(matchedIntersection);
+		problemPartOne.removeDangling();
+		
 		View problemPartTwo = remainderView.copy();
 		problemPartTwo.union(matchedIntersection);
 		
@@ -437,13 +442,13 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * element by solution part elements. This results in the final first split view. The second split element
 	 * is computed based on the first one such that the intersection of the two parts is minimal but their union
 	 * yields the complete search space element.
-	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances of the contained meta-model elements
-	 * are part of both retuned split elements
+	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances (i.e nodes and non-dangling edges) of
+	 * the contained meta-model elements are part of both retuned split elements
 	 * @return Returns a {@link Pair pair} of two new {@link View views} on the same 
 	 * {@link View#resource resource} as the given {@link View views} representing the split of
 	 * the search space element. The first element of the split contains the first element of the given
 	 * {@link Pair problemSplit} and the second element of the split contains the second.
-	 * @throws ViewSetOperationException if a set-operation on a view was not successfull
+	 * @throws ViewSetOperationException if a set-operation on a view was not successful
 	 */
 	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, SearchSpaceElementSplitStrategy strategy, View subMetaModelOfIntersection) throws ViewSetOperationException {
 		
@@ -454,7 +459,6 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		View searchSpaceElementOne = searchSpaceElement.copy();
 		searchSpaceElementOne.subtract(problemPart);
 		searchSpaceElementOne.union(problemSplit.getFirst());
-		searchSpaceElementOne.removeDangling();
 		
 		strategy.setProblemSplitPart(problemSplit.getFirst());
 		strategy.apply(searchSpaceElementOne);
@@ -463,18 +467,12 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		searchSpaceElementTwo.subtract(problemPart);
 		searchSpaceElementTwo.subtract(searchSpaceElementOne);
 		searchSpaceElementTwo.union(problemSplit.getSecond());
-		searchSpaceElementTwo.completeDangling();
 		
-		// remove all edges in searchSpaceElementOne from searchSpaceElementTwo
-		for (Edge edge : searchSpaceElementOne.getGraph().getEdges()) {
-			EObject sourceEObject = searchSpaceElementOne.getObject(edge.getSource());
-			EObject targetEObject = searchSpaceElementOne.getObject(edge.getTarget());
-			if (searchSpaceElementTwo.contains(sourceEObject, targetEObject, edge.getType(), false)) {
-				boolean removedEdge = searchSpaceElementTwo.reduce(sourceEObject, targetEObject, edge.getType());
-				if(!removedEdge) removedEdge = searchSpaceElementTwo.reduce(targetEObject, sourceEObject, edge.getType());
-				if(!removedEdge) throw new IllegalStateException("Cannot remove an edge.");
-			}
-		}
+		/**
+		 * This is necessary because we need all edges in the view for the union of searchSpaceElementOne
+		 * and searchSpaceElementTwo to contain all elements of the searchSpaceElement.
+		 */
+		searchSpaceElementTwo.completeDangling();
 		
 		View matchedIntersection = problemPart.copy();
 		
@@ -485,8 +483,15 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			if (!successfullyMatched) throw new IllegalStateException("Couldn't match the subMetaModelOfIntersection.");
 		}
 		
-		searchSpaceElementOne.union(matchedIntersection);
-		searchSpaceElementTwo.union(matchedIntersection);
+		View copyOfSearchSpaceElementOne = searchSpaceElementOne.copy();
+		copyOfSearchSpaceElementOne.union(matchedIntersection);
+		copyOfSearchSpaceElementOne.removeDangling();
+		searchSpaceElementOne.union(copyOfSearchSpaceElementOne);
+		
+		View copyOfSearchSpaceElementTwo = searchSpaceElementTwo.copy();
+		copyOfSearchSpaceElementTwo.union(matchedIntersection);
+		copyOfSearchSpaceElementTwo.removeDangling();
+		searchSpaceElementTwo.union(copyOfSearchSpaceElementTwo);
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		

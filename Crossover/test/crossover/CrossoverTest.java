@@ -209,6 +209,90 @@ class CrossoverTest extends TestResources {
 	}
 	
 	/**
+	 * Test method for {@link Crossover#splitProblemPart(View,View,Strategy)}.
+	 */
+	@Test
+	final void testSplitProblemPartNonEmptySubMetamodel() throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ViewSetOperationException {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4")
+		);
+		
+		EObject method2 = map.get(0).iterator().next();
+		EObject attribute4 = map.get(1).iterator().next();
+		
+		// create strategy
+		
+		Strategy strategy = view -> {
+			view.reduce(attributeEClass);
+		};
+		
+		// create problemView and border
+		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		View problemPartView = new View(CRA_INSTANCE_ONE);
+		View problemBorder = new View(CRA_ECORE);
+		
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		problemBorder.extend((EObject) attributeEClass);
+		problemBorder.extend((EObject) methodEClass);
+		
+		// create empty sub metamodel
+		View subMetamodel = new View(CRA_ECORE);
+		subMetamodel.extend((EObject) classModelEClass);
+		subMetamodel.extend((EObject) classModelClasses);
+		
+		// create expected split
+		
+		View first = problemPartView.copy();
+		View second = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		Pair<View, View> expectedPair = new Pair<View, View>(first, second);
+		
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
+		
+		// border with classModelEClass should yield the same result
+		problemBorder.extend((EObject) classModelEClass);
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
+		
+		// border with classModelClasses and classModelclasses should not yield the same result
+		problemBorder.extend((EObject) classModelClasses);
+		problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
+		problemPartView.clear();
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		second.extend(classModelClasses);
+		expectedPair = new Pair<View, View>(first, second);
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
+		
+	}
+	
+	/**
 	 * Runs the {@link Crossover#splitProblemPart} method with the given {@link View problemPartView}, {@link View problemBorder}
 	 * and {@link Strategy strategy}. Asserts the returned split to be equal to the {@link Pair expectedSplit}.
 	 * @param problemPartView the {@link View view} of the problem part to use in the method call
@@ -237,6 +321,121 @@ class CrossoverTest extends TestResources {
 		assertTrue(actualCombinedView.equals(problemPartView));
 		
 		assertTrue(actualProblemSplit.equals(expectedSplit));
+		
+	}
+	
+	/**
+	 * Test method for {@link Crossover#splitSearchSpaceElement(View,Pair)}.
+	 */
+	@Test
+	final void testSplitSearchSpaceElementNonEmptySubMetamodel () throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException, ViewSetOperationException {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference classEncapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("5"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("8"),
+				eObject -> eObject.eGet(nameEAttribute).equals("9"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2 = map.get(0).iterator().next();
+		EObject attribute4 = map.get(2).iterator().next();
+		EObject attribute5 = map.get(1).iterator().next();
+		EObject class8 = map.get(3).iterator().next();
+		EObject class9 = map.get(4).iterator().next();
+		// EObject classModel1 = map.get(5).iterator().next();
+		
+		//  classModelClasses EReference in problem part
+		
+		// create empty sub metamodel
+		View subMetamodel = new View(CRA_ECORE);
+		subMetamodel.extend((EObject) classModelEClass);
+		subMetamodel.extend((EObject) classModelClasses);
+		
+		// create problemView and split
+		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EReference> problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
+		
+		View problemPartView = new View(CRA_INSTANCE_ONE);
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		View first = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		
+		View second = problemPartView.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModelClasses);
+		Pair<View, View> problemSplit = new Pair<View, View>(first, second);
+		
+		View expectedFirst = first.copy();
+		expectedFirst.extend(class8);
+		expectedFirst.extendByMissingEdges();
+		
+		View expectedSecond = second.copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8, attribute4, classEncapsulates);
+		expectedSecond.extend(class9, attribute5, classEncapsulates);
+		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
+		
+		//  classModelClasses EReference in solution part
+		
+		problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		problemPartView = new View(CRA_INSTANCE_ONE);
+		problemPartClasses.forEach(problemPartView::extend);
+		problemPartReferences.forEach(problemPartView::extend);
+		
+		first = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		
+		second = problemPartView.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		
+		problemSplit = new Pair<View, View>(first, second);
+		
+		expectedFirst = first.copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = second.copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8, attribute4, classEncapsulates);
+		expectedSecond.extend(class9, attribute5, classEncapsulates);
+		expectedSecond.extend(classModelClasses);
+		
+		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
 		
 	}
 	
@@ -314,6 +513,32 @@ class CrossoverTest extends TestResources {
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
+		
+		//  classModelClasses EReference in problem part different problem split
+		first = problemPartView.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		first.extend(classModel1, class8, classModelClasses);
+		
+		second = problemPartView.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2);
+		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, class9, classModelClasses);
+		problemSplit = new Pair<View, View>(first, second);
+		
+		expectedFirst = first.copy();
+		expectedFirst.extend(class8);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = second.copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8, attribute4, classEncapsulates);
+		expectedSecond.extend(class9, attribute5, classEncapsulates);
+		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
 		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
 		
