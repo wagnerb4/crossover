@@ -95,14 +95,14 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	/**
 	 * A {@link Pair pair} of {@link View views} over the {@link View#resource resource} that represents
 	 * the first search space element, each containing parts according to
-	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy)}.
+	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy, View)}.
 	 */
 	private Pair<View, View> splitOfSSEOne;
 	
 	/**
 	 * A {@link Pair pair} of {@link View views} over the {@link View#resource resource} that represents
 	 * the second search space element, each containing parts according to
-	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy)}.
+	 * {@link Crossover#splitSearchSpaceElement(View, Pair, SearchSpaceElementSplitStrategy, View)}.
 	 */
 	private Pair<View, View> splitOfSSETwo;
 	
@@ -142,6 +142,34 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
 			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy
 			) throws CrossoverUsageException, ViewSetOperationException {
+		init(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy, new View(metamodel));
+	}
+	
+	/**
+	 * Creates a new Crossover between the given {@link ResourceSet searchSpaceElements}.
+	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
+	 * @param searchSpaceElements the search space elements to do the crossover on
+	 * @param problemPartSplitStrategy the strategy used to split up the problem part
+	 * @param problemPartEClasses a {@link List list} of {@link EClass eClasses} describing the problem part
+	 * @param problemPartEReferences a {@link List list} of {@link EReference eReferences} describing the problem part
+	 * @param searchSpaceElementSplitStrategy the strategy usedto split up the search space elements
+	 * @param subMetaModelOfIntersection a {@link View view} on the {@literal metamodel} used to create the splits </br>
+	 * All instances of the elements contained by this view are part of the intersections of the problem split and search space
+	 * element split respectively. 
+	 * @throws CrossoverUsageException if one of the parameters is null or the metamodel or searchSpaceElements are empty.
+	 * @throws ViewSetOperationException on a set operation of a view
+	 */
+	public Crossover (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
+			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy,
+			View subMetaModelOfIntersection) throws CrossoverUsageException, ViewSetOperationException {
+		init(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy, subMetaModelOfIntersection);
+	}
+	
+	private void init (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
+			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy,
+			View subMetaModelOfIntersection) throws CrossoverUsageException, ViewSetOperationException {
 		
 		// checking parameters
 		
@@ -171,7 +199,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		View problemBorder = findBorder(metamodel, problemPartEClasses, problemPartEReferences);
 		
-		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder, problemPartSplitStrategy);
+		this.problemSplitSSEOne = splitProblemPart(problemPartSSEOne, problemBorder, problemPartSplitStrategy, subMetaModelOfIntersection);
 		this.problemSplitSSETwo = new Pair<View, View> (
 				ViewFactory.intersectByMapping(this.problemSplitSSEOne.getFirst(), this.problemPartSSETwo, 
 						MappingUtil.mapByOrigin(problemPartMappings, origin -> this.problemSplitSSEOne.getFirst().
@@ -185,8 +213,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		// split the search space elements according to the problem split
 		
-		this.splitOfSSEOne = splitSearchSpaceElement(problemPartSSEOne, problemSplitSSEOne, searchSpaceElementSplitStrategy);
-		this.splitOfSSETwo = splitSearchSpaceElement(problemPartSSETwo, problemSplitSSETwo, searchSpaceElementSplitStrategy);
+		this.splitOfSSEOne = splitSearchSpaceElement(problemPartSSEOne, problemSplitSSEOne, searchSpaceElementSplitStrategy, subMetaModelOfIntersection);
+		this.splitOfSSETwo = splitSearchSpaceElement(problemPartSSETwo, problemSplitSSETwo, searchSpaceElementSplitStrategy, subMetaModelOfIntersection);
 		
 		// compute the intersections
 		this.intersectionOfSSEOne = splitOfSSEOne.getFirst().copy();
@@ -242,6 +270,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * adjacent to the solution part
 	 * @param strategy a {@link Strategy} that is applied to the problem border of the {@link View problemPartView}
 	 * in order to customize the split
+	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances of the contained meta-model elements
+	 * are part of both retuned problem part split elements
 	 * @return Returns a {@link Pair pair} of {@link View views} over the same
 	 * {@link View#resource} as the given {@link View problemPartView}, each representing
 	 * one part of the split. The first split element view will contain the, by the given {@link Strategy strategy}
@@ -253,17 +283,30 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @throws ViewSetOperationException  if a set-operation on a view was not successfull
 	 * @throws IllegalStateException if general operation on a view was not successfull
 	 */
-	private Pair<View, View> splitProblemPart (View problemPartView, View problemBorder, Strategy strategy) throws ViewSetOperationException, IllegalStateException {
+	private Pair<View, View> splitProblemPart (View problemPartView, View problemBorder, Strategy strategy, View subMetaModelOfIntersection) throws ViewSetOperationException, IllegalStateException {
 		
 		View matchedBorder = problemPartView.copy();
 		boolean matchedSuccessfully = matchedBorder.matchViewByMetamodel(problemBorder);
 		if(!matchedSuccessfully) throw new IllegalStateException("The border counldn't be matched.");
+		
+		View matchedIntersection = problemPartView.copy();
+		
+		if (subMetaModelOfIntersection.isEmpty()) {
+			matchedIntersection.clear();
+		} else {
+			matchedSuccessfully = matchedIntersection.matchViewByMetamodel(subMetaModelOfIntersection);
+			if(!matchedSuccessfully) throw new IllegalStateException("The subMetaModelOfIntersection counldn't be matched.");
+			matchedIntersection.intersect(problemPartView);
+		}
+		
 		View remainderView = problemPartView.copy();
 		remainderView.subtract(matchedBorder);
 		remainderView.removeDangling();
 		
 		View problemPartOne = remainderView.copy();
+		problemPartOne.union(matchedIntersection);
 		View problemPartTwo = remainderView.copy();
+		problemPartTwo.union(matchedIntersection);
 		
 		View partOfMatchedBorder = matchedBorder.copy();
 		strategy.apply(partOfMatchedBorder);
@@ -286,7 +329,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		View notProblemPartOne = problemPartView.copy();
 		notProblemPartOne.subtract(problemPartOne);
 		problemPartTwo.union(notProblemPartOne);
-		// problemPartTwo.union(problemPartOne) biw results in a view equal to problemPartView
+		// problemPartTwo.union(problemPartOne) results in a view equal to problemPartView
 		
 		problemPartTwo.completeDangling();
 		// problemPartTwo doesn't contain dangling edges anymore but it may contain non problemPart nodes
@@ -394,13 +437,15 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * element by solution part elements. This results in the final first split view. The second split element
 	 * is computed based on the first one such that the intersection of the two parts is minimal but their union
 	 * yields the complete search space element.
+	 * @param subMetaModelOfIntersection a {@link View view} on the meta-model, instances of the contained meta-model elements
+	 * are part of both retuned split elements
 	 * @return Returns a {@link Pair pair} of two new {@link View views} on the same 
 	 * {@link View#resource resource} as the given {@link View views} representing the split of
 	 * the search space element. The first element of the split contains the first element of the given
 	 * {@link Pair problemSplit} and the second element of the split contains the second.
 	 * @throws ViewSetOperationException if a set-operation on a view was not successfull
 	 */
-	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, SearchSpaceElementSplitStrategy strategy) throws ViewSetOperationException {
+	private Pair<View, View> splitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, SearchSpaceElementSplitStrategy strategy, View subMetaModelOfIntersection) throws ViewSetOperationException {
 		
 		View searchSpaceElement = problemPart.copy();
 		searchSpaceElement.extendByAllNodes();
@@ -430,6 +475,18 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 				if(!removedEdge) throw new IllegalStateException("Cannot remove an edge.");
 			}
 		}
+		
+		View matchedIntersection = problemPart.copy();
+		
+		if (subMetaModelOfIntersection.isEmpty()) {
+			matchedIntersection.clear();
+		} else {
+			boolean successfullyMatched = matchedIntersection.matchViewByMetamodel(subMetaModelOfIntersection);
+			if (!successfullyMatched) throw new IllegalStateException("Couldn't match the subMetaModelOfIntersection.");
+		}
+		
+		searchSpaceElementOne.union(matchedIntersection);
+		searchSpaceElementTwo.union(matchedIntersection);
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		

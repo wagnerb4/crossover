@@ -130,7 +130,7 @@ class CrossoverTest extends TestResources {
 	 * Test method for {@link Crossover#splitProblemPart(View,View,Strategy)}.
 	 */
 	@Test
-	final void testSplitProblemPart() throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ViewSetOperationException {
+	final void testSplitProblemPartEmptySubMetamodel() throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ViewSetOperationException {
 		
 		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
 		EClass namedElementEClass = eClasses[0];
@@ -174,6 +174,9 @@ class CrossoverTest extends TestResources {
 		problemBorder.extend((EObject) attributeEClass);
 		problemBorder.extend((EObject) methodEClass);
 		
+		// create empty sub metamodel
+		View subMetamodel = new View(CRA_ECORE);
+		
 		// create expected split
 		
 		View first = problemPartView.copy();
@@ -186,11 +189,11 @@ class CrossoverTest extends TestResources {
 		second.extend(method2, attribute4, methodDataDependency);
 		Pair<View, View> expectedPair = new Pair<View, View>(first, second);
 		
-		runSplitProblemPart(problemPartView, problemBorder, strategy, expectedPair);
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
 		
 		// border with classModelEClass should yield the same result
 		problemBorder.extend((EObject) classModelEClass);
-		runSplitProblemPart(problemPartView, problemBorder, strategy, expectedPair);
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
 		
 		// border with classModelClasses and classModelclasses should not yield the same result
 		problemBorder.extend((EObject) classModelClasses);
@@ -201,7 +204,7 @@ class CrossoverTest extends TestResources {
 		
 		second.extend(classModelClasses);
 		expectedPair = new Pair<View, View>(first, second);
-		runSplitProblemPart(problemPartView, problemBorder, strategy, expectedPair);
+		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
 		
 	}
 	
@@ -211,9 +214,10 @@ class CrossoverTest extends TestResources {
 	 * @param problemPartView the {@link View view} of the problem part to use in the method call
 	 * @param problemBorder the {@link View view} of the problem border to use in the method call
 	 * @param strategy the {@link Strategy strategy} to use in the method call
+	 * @param subMetaModelOfIntersection the {@link View view} on the metamodel containing the sub-meta-model of the problem part intersection
 	 * @param expectedSplit the expected problem split
 	 */
-	private void runSplitProblemPart (View problemPartView, View problemBorder, Strategy strategy, Pair<View, View> expectedSplit) throws NoSuchMethodException, SecurityException, InstantiationException, 
+	private void runSplitProblemPart (View problemPartView, View problemBorder, Strategy strategy, View subMetaModelOfIntersection, Pair<View, View> expectedSplit) throws NoSuchMethodException, SecurityException, InstantiationException, 
 																																		IllegalAccessException, IllegalArgumentException, InvocationTargetException, ViewSetOperationException {
 		
 		// get an instance of the private splitProblemPart method
@@ -221,12 +225,12 @@ class CrossoverTest extends TestResources {
 		Constructor<Crossover> crossoverConstructor = clazz.getDeclaredConstructor(new Class[0]);
 		crossoverConstructor.setAccessible(true);
 		Crossover crossover = crossoverConstructor.newInstance();
-		Method splitProblemPart = clazz.getDeclaredMethod("splitProblemPart", View.class, View.class, Strategy.class);
+		Method splitProblemPart = clazz.getDeclaredMethod("splitProblemPart", View.class, View.class, Strategy.class, View.class);
 		splitProblemPart.setAccessible(true);
 		
 		// invoke the method
 		@SuppressWarnings("unchecked")
-		Pair<View, View> actualProblemSplit = (Pair<View, View>) splitProblemPart.invoke(crossover, problemPartView, problemBorder, strategy);
+		Pair<View, View> actualProblemSplit = (Pair<View, View>) splitProblemPart.invoke(crossover, problemPartView, problemBorder, strategy, subMetaModelOfIntersection);
 		
 		View actualCombinedView = actualProblemSplit.getFirst().copy();
 		actualCombinedView.union(actualProblemSplit.getSecond());
@@ -240,7 +244,7 @@ class CrossoverTest extends TestResources {
 	 * Test method for {@link Crossover#splitSearchSpaceElement(View,Pair)}.
 	 */
 	@Test
-	final void testSplitSearchSpaceElement() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException, ViewSetOperationException {
+	final void testSplitSearchSpaceElementEmptySubMetamodel() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException, ViewSetOperationException {
 		
 		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
 		EClass namedElementEClass = eClasses[0];
@@ -277,6 +281,9 @@ class CrossoverTest extends TestResources {
 		
 		//  classModelClasses EReference in problem part
 		
+		// create empty sub metamodel
+		View subMetamodel = new View(CRA_ECORE);
+		
 		// create problemView and split
 		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
@@ -308,7 +315,7 @@ class CrossoverTest extends TestResources {
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
-		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit, Crossover.DEFAULT_STRATEGY);
+		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
 		
 		//  classModelClasses EReference in solution part
 		
@@ -344,7 +351,7 @@ class CrossoverTest extends TestResources {
 		
 		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
-		runSplitSearchSpaceElement(problemPartView, problemSplit, expectedSplit, Crossover.DEFAULT_STRATEGY);
+		runSplitSearchSpaceElement(problemPartView, problemSplit, Crossover.DEFAULT_STRATEGY, subMetamodel, expectedSplit);
 		
 	}
 	
@@ -353,11 +360,12 @@ class CrossoverTest extends TestResources {
 	 * Asserts the returned split to be equal to the {@link Pair expectedSplit}.
 	 * @param problemPart the {@link View view} of the problem part to use in the method call
 	 * @param problemSplit the problemSplit-{@link Pair pair} to use in the method call
+	 * @param subMetaModelOfIntersection the {@link View view} on the metamodel containing the sub-meta-model of the problem part intersection
 	 * @param expectedSplit the expected problem split of the search space element given indirectly by the {@link View#resource resource}
 	 * in of the {@link View problemPart}
 	 */
 	private void runSplitSearchSpaceElement (View problemPart, Pair<View, View> problemSplit, 
-												Pair<View, View> expectedSplit, SearchSpaceElementSplitStrategy strategy) 
+												SearchSpaceElementSplitStrategy strategy, View subMetaModelOfIntersection, Pair<View, View> expectedSplit) 
 											throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
 											ViewSetOperationException, NoSuchMethodException, SecurityException, InstantiationException {
 		
@@ -366,12 +374,12 @@ class CrossoverTest extends TestResources {
 		Constructor<Crossover> crossoverConstructor = clazz.getDeclaredConstructor(new Class[0]);
 		crossoverConstructor.setAccessible(true);
 		Crossover crossover = crossoverConstructor.newInstance();
-		Method splitSearchSpaceElement = clazz.getDeclaredMethod("splitSearchSpaceElement", View.class, Pair.class, SearchSpaceElementSplitStrategy.class);
+		Method splitSearchSpaceElement = clazz.getDeclaredMethod("splitSearchSpaceElement", View.class, Pair.class, SearchSpaceElementSplitStrategy.class, View.class);
 		splitSearchSpaceElement.setAccessible(true);
 		
 		// invoke the method
 		@SuppressWarnings("unchecked")
-		Pair<View, View> actualSearchSpaceElementSplit = (Pair<View, View>) splitSearchSpaceElement.invoke(crossover, problemPart, problemSplit, strategy);
+		Pair<View, View> actualSearchSpaceElementSplit = (Pair<View, View>) splitSearchSpaceElement.invoke(crossover, problemPart, problemSplit, strategy, subMetaModelOfIntersection);
 		
 		if (!actualSearchSpaceElementSplit.equals(expectedSplit)) {
 			fail("Actual: " + actualSearchSpaceElementSplit.toString() + "; Expected: " + expectedSplit.toString());
