@@ -7,9 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +21,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.henshin.model.Mapping;
 import org.junit.jupiter.api.Test;
 
 import view.TestResources;
@@ -359,6 +362,57 @@ class CrossoverTest extends TestResources {
 	@Test
 	final void testGetSpanIterator() {
 		fail("Not yet implemented"); // TODO
+	}
+	
+	/**
+	 * Runs the {@link Crossover#getSpanIterator} method with the given arguments.
+	 * @param intersectionOfSSEOne a {@link View view} on the first search space element containing the intersection of the split elements
+	 * @param intersectionOfSSETwo a {@link View view} on the second search space element containing the intersection of the split elements
+	 * @param problemPartIntersection a {@link View view} on the first search space element containing the intersection of the problem split elements
+	 * @param problemPartSSEOne a {@link View view} on the first search space element containing its problem part
+	 * @param problemPartSSETwo a {@link View view} on the second search space element containing its problem part
+	 * @param problemPartMappings a {@link Set set} of {@link Mapping mappings} between the {@link Node nodes}
+	 * of {@literal problemPartSSEOne} and {@literal problemPartSSETwo}
+	 * @return Returns the {@link CustomSpan} {@link Iterator} of the method call.
+	 */
+	private Iterator<CustomSpan> runGetSpanIterator (View intersectionOfSSEOne, View intersectionOfSSETwo,
+			View problemPartIntersection, View problemPartSSEOne, View problemPartSSETwo, 
+			Set<Mapping> problemPartMappings) throws NoSuchMethodException, SecurityException, InstantiationException,
+			IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchFieldException {
+		
+		Class<Crossover> clazz = Crossover.class;
+		Constructor<Crossover> crossoverConstructor = clazz.getDeclaredConstructor(new Class[0]);
+		crossoverConstructor.setAccessible(true);
+		Crossover crossover = crossoverConstructor.newInstance();
+		
+		Field intersectionOfSSEOneField = clazz.getDeclaredField("intersectionOfSSEOne");
+		Field intersectionOfSSETwoField = clazz.getDeclaredField("intersectionOfSSETwo");
+		Field problemPartIntersectionField = clazz.getDeclaredField("problemPartIntersection");
+		Field problemPartSSEOneField = clazz.getDeclaredField("problemPartSSEOne");
+		Field problemPartSSETwoField = clazz.getDeclaredField("problemPartSSETwo");
+		Field problemPartMappingsField = clazz.getDeclaredField("problemPartMappings");
+		
+		intersectionOfSSEOneField.setAccessible(true);
+		intersectionOfSSETwoField.setAccessible(true);
+		problemPartIntersectionField.setAccessible(true);
+		problemPartSSEOneField.setAccessible(true);
+		problemPartSSETwoField.setAccessible(true);
+		problemPartMappingsField.setAccessible(true);
+		
+		intersectionOfSSEOneField.set(crossover, intersectionOfSSEOne);
+		intersectionOfSSETwoField.set(crossover, intersectionOfSSETwo);
+		problemPartIntersectionField.set(crossover, problemPartIntersection);
+		problemPartSSEOneField.set(crossover, problemPartSSEOne);
+		problemPartSSETwoField.set(crossover, problemPartSSETwo);
+		problemPartMappingsField.set(crossover, problemPartMappings);
+		
+		Method getSpanIterator = clazz.getDeclaredMethod("getSpanIterator");
+		getSpanIterator.setAccessible(true);
+		
+		@SuppressWarnings("unchecked")
+		Iterator<CustomSpan> customSpanIterator = (Iterator<CustomSpan>) getSpanIterator.invoke(crossover);
+		return customSpanIterator;
+		
 	}
 	
 	/**
