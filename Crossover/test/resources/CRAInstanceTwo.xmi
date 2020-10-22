@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CRA:ClassModel
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:CRA="http://www.example.org/CRA"
+    xsi:schemaLocation="http://www.example.org/CRA CRA.ecore"
+    name="1">
+  <classes name="6"
+      encapsulates="//@features.0 //@features.1"/>
+  <classes name="7"
+      encapsulates="//@features.2 //@features.3"/>
+  <features
+      xsi:type="CRA:Method"
+      name="2"
+      isEncapsulatedBy="//@classes.0"
+      dataDependency="//@features.2"/>
+  <features
+      xsi:type="CRA:Method"
+      name="3"
+      isEncapsulatedBy="//@classes.0"
+      functionalDependency="//@features.0"/>
+  <features
+      xsi:type="CRA:Attribute"
+      name="4"
+      isEncapsulatedBy="//@classes.1"/>
+  <features
+      xsi:type="CRA:Attribute"
+      name="5"
+      isEncapsulatedBy="//@classes.1"/>
+</CRA:ClassModel>

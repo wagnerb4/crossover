@@ -3,6 +3,7 @@
  */
 package crossover;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -11,10 +12,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -22,10 +26,12 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.model.Mapping;
+import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.junit.jupiter.api.Test;
 
 import view.TestResources;
 import view.View;
+import view.ViewFactory;
 import view.ViewSetOperationException;
 
 /**
@@ -360,8 +366,185 @@ class CrossoverTest extends TestResources {
 	 * Test method for {@link Crossover#getSpanIterator()}.
 	 */
 	@Test
-	final void testGetSpanIterator() {
-		fail("Not yet implemented"); // TODO
+	final void testGetSpanIterator() throws NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchFieldException {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		// EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference classEncapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		
+		// create problemView
+		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		View problemPartSSEOne = new View(CRA_INSTANCE_ONE);
+		View problemPartSSETwo = new View(CRA_INSTANCE_TWO);
+		
+		Set<Mapping> problemPartMappings = ViewFactory.buildViewMapping(problemPartSSEOne, problemPartSSETwo, problemPartClasses, problemPartReferences);
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("5"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("8"),
+				eObject -> eObject.eGet(nameEAttribute).equals("9"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2SSEOne = map.get(0).iterator().next();
+		// EObject attribute4SSEOne = map.get(2).iterator().next();
+		// EObject attribute5SSEOne = map.get(1).iterator().next();
+		EObject class8SSEOne = map.get(3).iterator().next();
+		// EObject class9SSEOne = map.get(4).iterator().next();
+		EObject classModel1SSEOne = map.get(5).iterator().next();
+		
+		map = getEObjectsFromResource (
+				CRA_INSTANCE_TWO, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("5"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("6"),
+				eObject -> eObject.eGet(nameEAttribute).equals("7"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2SSETwo = map.get(0).iterator().next();
+		// EObject attribute4SSETwo = map.get(2).iterator().next();
+		// EObject attribute5SSETwo = map.get(1).iterator().next();
+		EObject class6SSETwo = map.get(3).iterator().next();
+		// EObject class7SSETwo = map.get(4).iterator().next();
+		EObject classModel1SSETwo = map.get(5).iterator().next();
+				
+		View problemPartIntersection = new View(CRA_INSTANCE_ONE);
+		problemPartIntersection.extend(classModel1SSEOne);
+		problemPartIntersection.extend(method2SSEOne);
+		problemPartIntersection.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
+		
+		View intersectionOfSSEOne = new View(CRA_INSTANCE_ONE);
+		intersectionOfSSEOne.extend(classModel1SSEOne);
+		intersectionOfSSEOne.extend(method2SSEOne);
+		intersectionOfSSEOne.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
+		intersectionOfSSEOne.extend(class8SSEOne);
+		
+		View intersectionOfSSETwo = new View(CRA_INSTANCE_TWO);
+		intersectionOfSSETwo.extend(classModel1SSETwo);
+		intersectionOfSSETwo.extend(method2SSETwo);
+		intersectionOfSSETwo.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
+		intersectionOfSSETwo.extend(class6SSETwo);
+		intersectionOfSSETwo.extend(class6SSETwo, method2SSETwo, classEncapsulates);
+		
+		Iterator<CustomSpan> customSpanIterator = runGetSpanIterator (
+				intersectionOfSSEOne, intersectionOfSSETwo, problemPartIntersection, 
+				problemPartSSEOne, problemPartSSETwo, problemPartMappings
+		);
+		
+		Set<CustomSpan> setOfSpans = new HashSet<>();
+		
+		// there should be two solutions
+		assertTrue(customSpanIterator.hasNext());
+		setOfSpans.add(customSpanIterator.next());
+		assertTrue(customSpanIterator.hasNext());
+		setOfSpans.add(customSpanIterator.next());
+		assertFalse(customSpanIterator.hasNext());
+		
+		Set<CustomSpan> expectedSetOfSpans = new HashSet<>();
+		
+		// first solution
+		
+		View intersection = problemPartIntersection.copy();
+		Set<Mapping> mappingsOne = new HashSet<>();
+		
+		Mapping mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(classModel1SSEOne));
+		mapping.setImage(intersectionOfSSEOne.getNode(classModel1SSEOne));
+		mappingsOne.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(method2SSEOne));
+		mapping.setImage(intersectionOfSSEOne.getNode(method2SSEOne));
+		mappingsOne.add(mapping);
+		
+		Set<Mapping> mappingsTwo = new HashSet<>();
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(classModel1SSEOne));
+		mapping.setImage(intersectionOfSSETwo.getNode(classModel1SSETwo));
+		mappingsTwo.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(method2SSEOne));
+		mapping.setImage(intersectionOfSSETwo.getNode(method2SSETwo));
+		mappingsTwo.add(mapping);
+		
+		expectedSetOfSpans.add(new CustomSpan(intersection, mappingsOne, mappingsTwo));
+
+		// second solution
+		
+		intersection = problemPartIntersection.copy();
+		intersection.extend(class8SSEOne);
+		
+		mappingsOne = new HashSet<>();
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(classModel1SSEOne));
+		mapping.setImage(intersectionOfSSEOne.getNode(classModel1SSEOne));
+		mappingsOne.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(method2SSEOne));
+		mapping.setImage(intersectionOfSSEOne.getNode(method2SSEOne));
+		mappingsOne.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(class8SSEOne));
+		mapping.setImage(intersectionOfSSEOne.getNode(class8SSEOne));
+		mappingsOne.add(mapping);
+		
+		mappingsTwo = new HashSet<>();
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(classModel1SSEOne));
+		mapping.setImage(intersectionOfSSETwo.getNode(classModel1SSETwo));
+		mappingsTwo.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(method2SSEOne));
+		mapping.setImage(intersectionOfSSETwo.getNode(method2SSETwo));
+		mappingsTwo.add(mapping);
+		
+		mapping = new MappingImpl();
+		mapping.setOrigin(intersection.getNode(class8SSEOne));
+		mapping.setImage(intersectionOfSSETwo.getNode(class6SSETwo));
+		mappingsTwo.add(mapping);
+		
+		expectedSetOfSpans.add(new CustomSpan(intersection, mappingsOne, mappingsTwo));
+		
+		// sorting by the amount of nodes in the intersection is enough in this case
+		Comparator<CustomSpan> comparator = (spanOne, spanTwo) -> {
+			int sizeOne = spanOne.getIntersection().getGraph().getNodes().size();
+			int sizeTwo = spanTwo.getIntersection().getGraph().getNodes().size();
+			return ((Integer) sizeOne).compareTo(sizeTwo);
+		};
+		
+		List<CustomSpan> expectedCustomSpansSorted = expectedSetOfSpans.stream().sorted(comparator).collect(Collectors.toList());
+		List<CustomSpan> actualCustomSpansSorted = setOfSpans.stream().sorted(comparator).collect(Collectors.toList());
+		
+		for (int i = 0; i < expectedCustomSpansSorted.size(); i++) {
+			assertTrue(expectedCustomSpansSorted.get(i).equals(actualCustomSpansSorted.get(i)));
+		}
+		
 	}
 	
 	/**

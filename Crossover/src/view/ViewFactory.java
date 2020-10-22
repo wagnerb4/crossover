@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -17,7 +16,7 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.InternalEObject;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.util.EcoreUtil.Copier;
 import org.eclipse.emf.henshin.interpreter.EGraph;
 import org.eclipse.emf.henshin.interpreter.Engine;
@@ -219,38 +218,31 @@ public class ViewFactory {
 	    
 	    // remove edges
 	    
-	    List<Function<?, ?>> toUnset = new ArrayList<Function<?, ?>>();
+	    List<List<EObject>> toUnset = new ArrayList<List<EObject>>();
 	    
 	    for (EObject eObject : eGraph) {
 	    	List<EReference> eReferences = eObject.eClass().getEAllReferences();
 	    	for (EReference eReference : eReferences) {
-	    		EStructuralFeature.Setting setting = ((InternalEObject)eObject).eSetting(eReference);
 				Object object = eObject.eGet(eReference);
 				if (object instanceof EObject) {
 					if (!view.contains(copiesReversed.get(eObject), copiesReversed.get((EObject) object), eReference, false)) {
-						toUnset.add((o) -> {
-							setting.unset();
-							return null;
-						});
+						toUnset.add(List.of(eObject, (EObject) object, (EObject) eReference));
 					}
 				} else if (object != null) {
 					@SuppressWarnings("unchecked")
 					EList<EObject> eObjects = (EList<EObject>) object;
 					for (EObject referencedEObject : eObjects) {
 						if (!view.contains(copiesReversed.get(eObject), copiesReversed.get(referencedEObject), eReference, false)) {
-							toUnset.add((o) -> {
-								setting.unset();
-								return null;
-							});
+							toUnset.add(List.of(eObject, referencedEObject, (EObject) eReference));
 						}
 					}
 				}
 			}
 		}
 	    
-	    toUnset.forEach(function -> {
-	    	function.apply(null);
-	    });
+	    for (List<EObject> list : toUnset) {
+	    	EcoreUtil.remove(list.get(0), ((EStructuralFeature) list.get(2)), list.get(1));
+	    }
 	    
 		return new Pair<EGraph, Map<EObject,EObject>>(eGraph, copier);
 		

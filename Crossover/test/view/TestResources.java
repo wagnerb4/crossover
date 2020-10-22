@@ -34,6 +34,7 @@ public class TestResources {
 	protected static Resource SCRUM_PLANNIG_INSTANCE_THREE;
 	protected static Resource CRA_ECORE;
 	protected static Resource CRA_INSTANCE_ONE;
+	protected static Resource CRA_INSTANCE_TWO;
 
 	// setup
 	
@@ -49,6 +50,7 @@ public class TestResources {
 		SCRUM_PLANNIG_INSTANCE_THREE = resourceSet.getResource("scrumPlanningInstanceThree.xmi");
 		CRA_ECORE = resourceSet.getResource("CRA.ecore");
 		CRA_INSTANCE_ONE = resourceSet.getResource("CRAInstanceOne.xmi");
+		CRA_INSTANCE_TWO = resourceSet.getResource("CRAInstanceTwo.xmi");
 	}
 	
 	// helper methods and tests of the helper methods
