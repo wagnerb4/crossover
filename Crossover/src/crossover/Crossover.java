@@ -12,10 +12,14 @@ import java.util.Set;
 import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EcoreFactory;
+import org.eclipse.emf.ecore.impl.EPackageImpl;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.henshin.interpreter.Change;
 import org.eclipse.emf.henshin.interpreter.EGraph;
 import org.eclipse.emf.henshin.interpreter.Engine;
@@ -138,7 +142,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @throws CrossoverUsageException if one of the parameters is null or the metamodel or searchSpaceElements are empty.
 	 * @throws ViewSetOperationException on a set operation of a view
 	 */
-	public Crossover (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+	public Crossover (Resource metamodel, Pair<Resource, Resource> searchSpaceElements, Strategy problemPartSplitStrategy,
 			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
 			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy
 			) throws CrossoverUsageException, ViewSetOperationException {
@@ -147,11 +151,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		if(metamodel == null || metamodel.getContents().isEmpty())
 			throw new CrossoverUsageException("The metamodel must not be null or empty.");
-		if(searchSpaceElements == null || !searchSpaceElements.getAllContents().hasNext())
-			throw new CrossoverUsageException("The searchSpaceElements must not be null or emtpy.");
-		if(searchSpaceElements.getResources().size() != 2) 
-			throw new CrossoverUsageException("The searchSpaceElements ResourceSet has to contain exactly two resources."
-					+ "One for each search space element.");
+		if(searchSpaceElements == null || searchSpaceElements.getFirst() == null || searchSpaceElements.getSecond() == null)
+			throw new CrossoverUsageException("The searchSpaceElements must not be null.");
 		if(problemPartSplitStrategy == null)
 			throw new CrossoverUsageException("The strategy must not be null.");
 		if(problemPartEClasses == null)
@@ -161,8 +162,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		// find the problem part of each search space element
 		
-		this.problemPartSSEOne = new View(searchSpaceElements.getResources().get(0));
-		this.problemPartSSETwo = new View(searchSpaceElements.getResources().get(1));
+		this.problemPartSSEOne = new View(searchSpaceElements.getFirst());
+		this.problemPartSSETwo = new View(searchSpaceElements.getSecond());
 		
 		/**
 		 * A set of {@link Mapping mappings}  from {@link View problemPartSSEOne} to {@link problemPartSSETwo}.
@@ -192,10 +193,6 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		this.splitOfSSETwo = splitSearchSpaceElement(problemPartSSETwo, problemSplitSSETwo, searchSpaceElementSplitStrategy);
 		
 		// compute the intersections
-		
-		this.problemPartIntersection = problemSplitSSEOne.getFirst().copy();
-		this.problemPartIntersection.intersect(problemSplitSSEOne.getSecond());
-		
 		this.intersectionOfSSEOne = splitOfSSEOne.getFirst().copy();
 		this.intersectionOfSSEOne.intersect(splitOfSSEOne.getSecond());
 		
@@ -224,7 +221,19 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 			this.intersectionOfSSEOne = this.intersectionOfSSETwo;
 			this.intersectionOfSSETwo = tempView;
 			
+			Set<Mapping> tmpMappings = new HashSet<Mapping>();
+			problemPartMappings.forEach(mapping -> {
+				Mapping inverseMapping = new MappingImpl();
+				inverseMapping.setOrigin(mapping.getImage());
+				inverseMapping.setImage(mapping.getOrigin());
+				tmpMappings.add(inverseMapping);
+			});
+			this.problemPartMappings = tmpMappings;
+			
 		}
+		
+		this.problemPartIntersection = problemSplitSSEOne.getFirst().copy();
+		this.problemPartIntersection.intersect(problemSplitSSEOne.getSecond());
 		
 	}
 	
@@ -476,6 +485,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 				
 				if(computedSpans != null && computedSpans.hasNext()) {
 					nextSpan = computedSpans.next();
+					return;
 				}
 				
 				Set<CustomSpan> spans = Collections.emptySet();
@@ -504,7 +514,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 					Iterator<Set<Mapping>> mappingSetIterator = MappingUtil.getMappingSetIterator (
 							subgraphOfIntersectionOfSSEOne, // from View
 							intersectionOfSSETwo, // to View
-							mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo // mapping from itentity to "to View"
+							mapFromProblemPartIntersectionSSEOneToIntersectionOfSSETwo // mapping from the itentity part in "fromView" to "toView"
 					);
 					
 					spans = new HashSet<CustomSpan>();
@@ -622,7 +632,10 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 						return new Pair<Node, EObject>(mapping.getOrigin(), copiedEObject);
 					}).forEach((Pair<Node, EObject> pair) -> matchForSSETwoSplitSecond.setNodeTarget(pair.getFirst(), pair.getSecond()));
 					
+					// E1F2
 					Change chageOne = engine.createChange(intersectionToSSEOneFirstSplitElement, eGraphOfSSETwoSplitSecond.getFirst(), matchForSSETwoSplitSecond, null);
+					
+					// F2E1
 					Change chageTwo = engine.createChange(intersectionToSSEOneSecondSplitElement, eGraphOfSSETwoSplitFirst.getFirst(), matchForSSETwoSplitFirst, null);
 					
 					chageOne.applyAndReverse();
@@ -631,12 +644,16 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 					// create the resource pair
 					
 					Resource resourceOne = new ResourceImpl();
-					Resource resourceTwo = new ResourceImpl();
+					Resource resourceTwo = new ResourceImpl();	
 					
 					resourceOne.getContents().addAll(chageOne.getEGraph().getRoots());
 					resourceTwo.getContents().addAll(chageTwo.getEGraph().getRoots());
 					
 					nextCrossoverPair = new Pair<Resource, Resource>(resourceOne, resourceTwo);
+					
+				} else {
+					
+					nextCrossoverPair = null;
 					
 				}
 				

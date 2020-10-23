@@ -3,7 +3,10 @@
  */
 package crossover;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -11,6 +14,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -18,14 +22,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.eclipse.emf.common.util.BasicEList;
+import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
+import org.eclipse.emf.ecore.EStructuralFeature;
+import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.model.Mapping;
+import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.junit.jupiter.api.Test;
 
@@ -599,20 +609,394 @@ class CrossoverTest extends TestResources {
 	}
 	
 	/**
-	 * Test method for {@link Crossover#iterator()}.
-	 */
-	@Test
-	final void testIterator() {
-		fail("Not yet implemented"); // TODO
-	}
-
-	/**
 	 * Test method for {@link Crossover}. Tests the
 	 * complete procedure.
 	 */
+	@SuppressWarnings("unchecked")
 	@Test
-	final void testCrossover() {
-		fail("Not yet implemented"); // TODO
+	final void testCrossover() throws CrossoverUsageException, ViewSetOperationException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		EClass classModelEClass = eClasses[1];
+		EClass classEClass = eClasses[2];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
+		
+		EReference classModelClasses = getEReferenceFromEClass(classModelEClass, "classes");
+		EReference classModelFeatures = getEReferenceFromEClass(classModelEClass, "features");
+		EReference methodDataDependency = getEReferenceFromEClass(methodEClass, "dataDependency");
+		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
+		EReference classEncapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
+				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("5"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("8"),
+				eObject -> eObject.eGet(nameEAttribute).equals("9"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2SSEOne = map.get(0).iterator().next();
+		EObject attribute4SSEOne = map.get(2).iterator().next();
+		EObject attribute5SSEOne = map.get(1).iterator().next();
+		EObject class8SSEOne = map.get(3).iterator().next();
+		EObject class9SSEOne = map.get(4).iterator().next();
+		EObject classModel1SSEOne = map.get(5).iterator().next();
+		
+		map = getEObjectsFromResource (
+				CRA_INSTANCE_TWO, 
+				eObject -> eObject.eGet(nameEAttribute).equals("2"),
+				eObject -> eObject.eGet(nameEAttribute).equals("5"),
+				eObject -> eObject.eGet(nameEAttribute).equals("4"),
+				eObject -> eObject.eGet(nameEAttribute).equals("6"),
+				eObject -> eObject.eGet(nameEAttribute).equals("7"),
+				eObject -> eObject.eGet(nameEAttribute).equals("1")
+		);
+		
+		EObject method2SSETwo = map.get(0).iterator().next();
+		EObject attribute4SSETwo = map.get(2).iterator().next();
+		EObject attribute5SSETwo = map.get(1).iterator().next();
+		// EObject class6SSETwo = map.get(3).iterator().next();
+		EObject class7SSETwo = map.get(4).iterator().next();
+		EObject classModel1SSETwo = map.get(5).iterator().next();
+		
+		// create problemView and border
+		List<EClass> problemPartEClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EReference> problemPartEReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
+		
+		Pair<Resource, Resource> searchSpaceElements = new Pair<Resource, Resource>(CRA_INSTANCE_ONE, CRA_INSTANCE_TWO);
+		
+		Strategy problemPartSplitStrategy = (View view) -> {
+			view.reduce(attributeEClass);
+		};
+		
+		Crossover crossover = new Crossover(CRA_ECORE, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, Crossover.DEFAULT_STRATEGY);
+		
+		View problemPartSSETwo = new View(CRA_INSTANCE_TWO);
+		problemPartEClasses.forEach(eClass -> problemPartSSETwo.extend(eClass));
+		problemPartEReferences.forEach(eReference -> problemPartSSETwo.extend(eReference));
+		
+		assertFieldIsCorrect (crossover, "problemPartSSEOne", (actualValue) -> {
+			assertTrue(problemPartSSETwo.equals(actualValue));	
+		});
+		
+		View problemPartSSEOne = new View(CRA_INSTANCE_ONE);
+		problemPartEClasses.forEach(eClass -> problemPartSSEOne.extend(eClass));
+		problemPartEReferences.forEach(eReference -> problemPartSSEOne.extend(eReference));
+		
+		assertFieldIsCorrect (crossover, "problemPartSSETwo", (actualValue) -> {
+			assertTrue(problemPartSSEOne.equals(actualValue));
+		});
+		
+		View first = problemPartSSETwo.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		
+		View second = problemPartSSETwo.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2SSETwo);
+		second.extend(method2SSETwo, attribute4SSETwo, methodDataDependency);
+		
+		Pair<View, View> problemSplitSSETwo = new Pair<View, View>(first, second);
+		
+		assertFieldIsCorrect (crossover, "problemSplitSSEOne", (actualValue) -> {
+			assertTrue(problemSplitSSETwo.equals(actualValue));
+		});
+		
+		first = problemPartSSEOne.copy();
+		first.reduce(attributeEClass);
+		first.removeDangling();
+		
+		second = problemPartSSEOne.copy();
+		second.reduce(methodEClass);
+		second.removeDangling();
+		second.extend(method2SSEOne);
+		second.extend(method2SSEOne, attribute4SSEOne, methodDataDependency);
+		
+		Pair<View, View> problemSplitSSEOne = new Pair<View, View>(first, second);
+		
+		assertFieldIsCorrect (crossover, "problemSplitSSETwo", (actualValue) -> {
+			assertTrue(problemSplitSSEOne.equals(actualValue));
+		});
+		
+		View expectedFirst = problemSplitSSETwo.getFirst().copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		View expectedSecond = problemSplitSSETwo.getSecond().copy();
+		expectedSecond.extend(class7SSETwo);
+		expectedSecond.extend(class7SSETwo, attribute4SSETwo, classEncapsulates);
+		expectedSecond.extend(class7SSETwo, attribute5SSETwo, classEncapsulates);
+		expectedSecond.reduce(classModel1SSETwo, class7SSETwo, classModelClasses);
+		
+		Pair<View, View> splitOfSSETwo = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		assertFieldIsCorrect (crossover, "splitOfSSEOne", (actualValue) -> {
+			assertTrue(splitOfSSETwo.equals(actualValue));
+		});
+		
+		expectedFirst = problemSplitSSEOne.getFirst().copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = problemSplitSSEOne.getSecond().copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8SSEOne, attribute4SSEOne, classEncapsulates);
+		expectedSecond.extend(class9SSEOne, attribute5SSEOne, classEncapsulates);
+		expectedSecond.reduce(classModel1SSEOne, class8SSEOne,classModelClasses);
+		expectedSecond.reduce(classModel1SSEOne, class9SSEOne,classModelClasses);
+		
+		Pair<View, View> splitOfSSEOne = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		assertFieldIsCorrect (crossover, "splitOfSSETwo", (actualValue) -> {
+			assertTrue(splitOfSSEOne.equals(actualValue));
+		});
+		
+		assertFieldIsCorrect (crossover, "problemPartIntersection", (actualValue) -> {
+			
+			View problemPartIntersection = new View(CRA_INSTANCE_TWO);
+			problemPartIntersection.extend(classModel1SSETwo);
+			problemPartIntersection.extend(method2SSETwo);
+			
+			assertTrue(problemPartIntersection.equals(actualValue));
+			
+		});
+		
+		assertFieldIsCorrect (crossover, "intersectionOfSSEOne", (actualValue) -> {
+			
+			View intersectionOfSSETwo = new View(CRA_INSTANCE_TWO);
+			intersectionOfSSETwo.extend(classModel1SSETwo);
+			intersectionOfSSETwo.extend(method2SSETwo);
+			intersectionOfSSETwo.extend(class7SSETwo);
+			
+			assertTrue(intersectionOfSSETwo.equals(actualValue));
+			
+		});
+		
+		assertFieldIsCorrect (crossover, "intersectionOfSSETwo", (actualValue) -> {
+			
+			View intersectionOfSSEOne = new View(CRA_INSTANCE_ONE);
+			intersectionOfSSEOne.extend(classModel1SSEOne);
+			intersectionOfSSEOne.extend(method2SSEOne);
+			intersectionOfSSEOne.extend(classEClass);
+			
+			assertTrue(intersectionOfSSEOne.equals(actualValue));
+			
+		});
+		
+		Iterator<Pair<Resource, Resource>> iterator = crossover.iterator();
+		List<Pair<Resource, Resource>> foundCrossoverPairs = new ArrayList<Pair<Resource, Resource>>();
+		
+		while (iterator.hasNext()) {
+			Pair<Resource, Resource> pair = (Pair<Resource, Resource>) iterator.next();
+			assertNotNull(pair);
+			assertNotNull(pair.getFirst());
+			assertNotNull(pair.getSecond());
+			foundCrossoverPairs.add(
+					new Pair<Resource, Resource>(
+							pair.getFirst(),
+							pair.getSecond()
+						)
+			);
+		}
+		
+		assertEquals(3, foundCrossoverPairs.size());
+		
+		// crossover one
+		List<EObject> unconnectedClasses = new ArrayList<>();
+		EObject classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(0).getFirst().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		EStructuralFeature.Setting setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		EList<EObject> classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		EList<EObject> newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(0).getFirst().getContents().removeAll(unconnectedClasses);
+		
+		View firstCrossover = new View(foundCrossoverPairs.get(0).getFirst());
+		firstCrossover.extendByAllNodes();
+		firstCrossover.extendByMissingEdges();
+		
+		unconnectedClasses = new ArrayList<>();
+		classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(0).getSecond().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(0).getSecond().getContents().removeAll(unconnectedClasses);
+		
+		View secondCrossover = new View(foundCrossoverPairs.get(0).getSecond());
+		secondCrossover.extendByAllNodes();
+		secondCrossover.extendByMissingEdges();
+		
+		// TODO: Test
+		
+		// crossover two
+		unconnectedClasses = new ArrayList<>();
+		classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(1).getFirst().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(1).getFirst().getContents().removeAll(unconnectedClasses);
+		
+		firstCrossover = new View(foundCrossoverPairs.get(1).getFirst());
+		firstCrossover.extendByAllNodes();
+		firstCrossover.extendByMissingEdges();
+		
+		unconnectedClasses = new ArrayList<>();
+		classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(1).getSecond().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(1).getSecond().getContents().removeAll(unconnectedClasses);
+		
+		secondCrossover = new View(foundCrossoverPairs.get(1).getSecond());
+		secondCrossover.extendByAllNodes();
+		secondCrossover.extendByMissingEdges();
+		
+		// TODO: Test
+		
+		// crossover three
+		unconnectedClasses = new ArrayList<>();
+		classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(2).getFirst().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(2).getFirst().getContents().removeAll(unconnectedClasses);
+		
+		firstCrossover = new View(foundCrossoverPairs.get(2).getFirst());
+		firstCrossover.extendByAllNodes();
+		firstCrossover.extendByMissingEdges();
+		
+		unconnectedClasses = new ArrayList<>();
+		classModel = null;
+		
+		for (EObject eObject : foundCrossoverPairs.get(2).getSecond().getContents()) {
+			if (eObject.eClass() == classEClass) {
+				unconnectedClasses.add(eObject);
+			} else if ( eObject.eClass() == classModelEClass ) {
+				assertNull(classModel);
+				classModel = eObject;
+			} else {
+				fail("Unexpected Root");
+			}
+		}
+		
+		assertNotNull(classModel);
+		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
+		classes = (EList<EObject>) classModel.eGet(classModelClasses);
+		newClasses = new BasicEList<>();
+		newClasses.addAll(classes);
+		newClasses.addAll(unconnectedClasses);
+	    setting.set(newClasses);
+	    foundCrossoverPairs.get(2).getSecond().getContents().removeAll(unconnectedClasses);
+		
+		secondCrossover = new View(foundCrossoverPairs.get(2).getSecond());
+		secondCrossover.extendByAllNodes();
+		secondCrossover.extendByMissingEdges();
+		
+		// TODO: Test
+		
+	}
+	
+	/**
+	 * Get a private field from the given {@link Crossover crossover} by its {@literal fieldName} and check
+	 * the value for correctness.
+	 * @param crossover the {@link Crossover} to get the value from
+	 * @param fieldName the name of the field
+	 * @param assertCorrectness the correctness criterion
+	 */
+	private void assertFieldIsCorrect (Crossover crossover, String fieldName, Consumer<Object> assertCorrectness) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		
+		Class<Crossover> clazz = Crossover.class;
+		Field field = clazz.getDeclaredField(fieldName);
+		field.setAccessible(true);
+		Object actualValue = field.get(crossover);
+		assertCorrectness.accept(actualValue);
+		
 	}
 	
 }
