@@ -142,8 +142,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 */
 	public Crossover (Resource metamodel, Pair<Resource, Resource> searchSpaceElements, Strategy problemPartSplitStrategy,
 			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
-			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy
-			) throws CrossoverUsageException, ViewSetOperationException {
+			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy) throws CrossoverUsageException, ViewSetOperationException {
 		init(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy, new View(metamodel));
 	}
 	
@@ -161,14 +160,14 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @throws CrossoverUsageException if one of the parameters is null or the metamodel or searchSpaceElements are empty.
 	 * @throws ViewSetOperationException on a set operation of a view
 	 */
-	public Crossover (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+	public Crossover (Resource metamodel, Pair<Resource, Resource> searchSpaceElements, Strategy problemPartSplitStrategy,
 			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
 			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy,
 			View subMetaModelOfIntersection) throws CrossoverUsageException, ViewSetOperationException {
 		init(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy, subMetaModelOfIntersection);
 	}
 	
-	private void init (Resource metamodel, ResourceSet searchSpaceElements, Strategy problemPartSplitStrategy,
+	private void init (Resource metamodel, Pair<Resource, Resource> searchSpaceElements, Strategy problemPartSplitStrategy,
 			List<EClass> problemPartEClasses, List<EReference> problemPartEReferences,
 			SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy,
 			View subMetaModelOfIntersection) throws CrossoverUsageException, ViewSetOperationException {
