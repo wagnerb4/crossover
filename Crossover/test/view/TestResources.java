@@ -35,6 +35,12 @@ public class TestResources {
 	protected static Resource CRA_ECORE;
 	protected static Resource CRA_INSTANCE_ONE;
 	protected static Resource CRA_INSTANCE_TWO;
+	protected static Resource CRACrossoverTest1_1;
+	protected static Resource CRACrossoverTest1_2;
+	protected static Resource CRACrossoverTest2_1;
+	protected static Resource CRACrossoverTest2_2;
+	protected static Resource CRACrossoverTest3_1;
+	protected static Resource CRACrossoverTest3_2;
 
 	// setup
 	
@@ -51,6 +57,12 @@ public class TestResources {
 		CRA_ECORE = resourceSet.getResource("CRA.ecore");
 		CRA_INSTANCE_ONE = resourceSet.getResource("CRAInstanceOne.xmi");
 		CRA_INSTANCE_TWO = resourceSet.getResource("CRAInstanceTwo.xmi");
+		CRACrossoverTest1_1 = resourceSet.getResource("CRACrossoverTest1.1.xmi");
+		CRACrossoverTest1_2 = resourceSet.getResource("CRACrossoverTest1.2.xmi");
+		CRACrossoverTest2_1 = resourceSet.getResource("CRACrossoverTest2.1.xmi");
+		CRACrossoverTest2_2 = resourceSet.getResource("CRACrossoverTest2.2.xmi");
+		CRACrossoverTest3_1 = resourceSet.getResource("CRACrossoverTest3.1.xmi");
+		CRACrossoverTest3_2 = resourceSet.getResource("CRACrossoverTest3.2.xmi");
 	}
 	
 	// helper methods and tests of the helper methods
