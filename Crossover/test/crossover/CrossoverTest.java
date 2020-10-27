@@ -300,10 +300,10 @@ class CrossoverTest extends TestResources {
 		View expectedFirst = first.copy();
 		expectedFirst.extend(class8);
 		expectedFirst.extendByMissingEdges();
+		expectedFirst.reduce(classModel1, class8, classModelClasses);
 		
 		View expectedSecond = second.copy();
 		expectedSecond.extend(classEClass);
-		expectedSecond.reduce(classModel1, class8, classModelClasses);
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);

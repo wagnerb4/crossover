@@ -274,7 +274,17 @@ public class ViewFactory {
 			dfsView.extend(view.getObject(visitedNode));
 		}
 		
-		dfsView.extendByMissingEdges();
+		
+		for (Edge edge : view.getGraph().getEdges()) {
+			EObject sourceEObject = view.getObject(edge.getSource());
+			EObject targetEObject = view.getObject(edge.getTarget());
+			
+			if (dfsView.contains(sourceEObject) && dfsView.contains(targetEObject)) {
+				boolean successfullyExtended = dfsView.extend(sourceEObject, targetEObject, edge.getType());
+				if (!successfullyExtended) successfullyExtended = dfsView.extend(targetEObject, sourceEObject, edge.getType());
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend by an edge");
+			}
+		}
 		
 		return dfsView;
 		
