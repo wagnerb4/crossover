@@ -1423,7 +1423,12 @@ class CrossoverTest extends TestResources {
 			view.reduce(attributeEClass);
 		};
 		
-		Crossover crossover = new Crossover(CRA_ECORE, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, Crossover.DEFAULT_STRATEGY);
+		// create empty sub metamodel
+		View subMetamodel = new View(CRA_ECORE);
+		subMetamodel.extend((EObject) classModelEClass);
+		subMetamodel.extend((EObject) classModelClasses);
+		
+		Crossover crossover = new Crossover(CRA_ECORE, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, Crossover.DEFAULT_STRATEGY, subMetamodel);
 		
 		View problemPartSSETwo = new View(CRA_INSTANCE_TWO);
 		problemPartEClasses.forEach(eClass -> problemPartSSETwo.extend(eClass));
@@ -1472,6 +1477,138 @@ class CrossoverTest extends TestResources {
 		assertFieldIsCorrect (crossover, "problemSplitSSETwo", (actualValue) -> {
 			assertTrue(problemSplitSSEOne.equals(actualValue));
 		});
+		
+		View expectedFirst = problemSplitSSETwo.getFirst().copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		View expectedSecond = problemSplitSSETwo.getSecond().copy();
+		expectedSecond.extend(class7SSETwo);
+		expectedSecond.extend(class7SSETwo, attribute4SSETwo, classEncapsulates);
+		expectedSecond.extend(class7SSETwo, attribute5SSETwo, classEncapsulates);
+		expectedSecond.extend(classModel1SSETwo, class7SSETwo, classModelClasses);
+		
+		Pair<View, View> splitOfSSETwo = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		assertFieldIsCorrect (crossover, "splitOfSSEOne", (actualValue) -> {
+			assertTrue(splitOfSSETwo.equals(actualValue));
+		});
+		
+		expectedFirst = problemSplitSSEOne.getFirst().copy();
+		expectedFirst.extend(classEClass);
+		expectedFirst.extendByMissingEdges();
+		
+		expectedSecond = problemSplitSSEOne.getSecond().copy();
+		expectedSecond.extend(classEClass);
+		expectedSecond.extend(class8SSEOne, attribute4SSEOne, classEncapsulates);
+		expectedSecond.extend(class9SSEOne, attribute5SSEOne, classEncapsulates);
+		expectedSecond.extend(classModelClasses);
+		
+		Pair<View, View> splitOfSSEOne = new Pair<View, View>(expectedFirst, expectedSecond);
+		
+		assertFieldIsCorrect (crossover, "splitOfSSETwo", (actualValue) -> {
+			assertTrue(splitOfSSEOne.equals(actualValue));
+		});
+		
+		assertFieldIsCorrect (crossover, "problemPartIntersection", (actualValue) -> {
+			
+			View problemPartIntersection = new View(CRA_INSTANCE_TWO);
+			problemPartIntersection.extend(classModel1SSETwo);
+			problemPartIntersection.extend(method2SSETwo);
+			
+			assertTrue(problemPartIntersection.equals(actualValue));
+			
+		});
+		
+		assertFieldIsCorrect (crossover, "intersectionOfSSEOne", (actualValue) -> {
+			
+			View intersectionOfSSETwo = new View(CRA_INSTANCE_TWO);
+			intersectionOfSSETwo.extend(classModel1SSETwo);
+			intersectionOfSSETwo.extend(method2SSETwo);
+			intersectionOfSSETwo.extend(class7SSETwo);
+			intersectionOfSSETwo.extend(classModel1SSETwo, class7SSETwo, classModelClasses);
+			
+			assertTrue(intersectionOfSSETwo.equals(actualValue));
+			
+		});
+		
+		assertFieldIsCorrect (crossover, "intersectionOfSSETwo", (actualValue) -> {
+			
+			View intersectionOfSSEOne = new View(CRA_INSTANCE_ONE);
+			intersectionOfSSEOne.extend(classModel1SSEOne);
+			intersectionOfSSEOne.extend(method2SSEOne);
+			intersectionOfSSEOne.extend(classEClass);
+			intersectionOfSSEOne.extend(classModelClasses);
+			
+			assertTrue(intersectionOfSSEOne.equals(actualValue));
+			
+		});
+		
+		Iterator<Pair<Resource, Resource>> iterator = crossover.iterator();
+		List<Pair<Resource, Resource>> foundCrossoverPairs = new ArrayList<Pair<Resource, Resource>>();
+		
+		while (iterator.hasNext()) {
+			Pair<Resource, Resource> pair = (Pair<Resource, Resource>) iterator.next();
+			assertNotNull(pair);
+			assertNotNull(pair.getFirst());
+			assertNotNull(pair.getSecond());
+			assertEquals(1, pair.getFirst().getContents().size());
+			assertEquals(1, pair.getSecond().getContents().size());
+			
+			foundCrossoverPairs.add(
+					new Pair<Resource, Resource>(
+							pair.getFirst(),
+							pair.getSecond()
+						)
+			);
+		}
+		
+		assertEquals(5, foundCrossoverPairs.size());
+		
+		/**
+		 * CRACrossoverTest3 comes first because the intersection is build upon the smallest subset.
+		 * After CRACrossoverTest3 comes CRACrossoverTest1 and CRACrossoverTest2 their order is determined
+		 * on whether the class of the intersection is first matched with class8 or class9 so I just tried it out.
+		 * The last two found crossovers pairs are exactly the same as the ones before them as the inclution of the
+		 * classModelClasses EReference in the intersection does not change the crossovers.
+		 */
+		
+		for (int i = 0; i < 5; i++) {
+			View firstView = new View(foundCrossoverPairs.get(i).getFirst());
+			firstView.extendByAllNodes();
+			firstView.extendByMissingEdges();
+			View secondView = new View(foundCrossoverPairs.get(i).getSecond());
+			secondView.extendByAllNodes();
+			secondView.extendByMissingEdges();
+			
+			switch (i + 1) {
+				case 1:
+					assertExistsOnlyOneBijection(CRACrossoverTest3_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest3_2, secondView);
+				break;
+				
+				case 2:
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+				break;
+				
+				case 3:
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+				break;
+				
+				case 4:
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+				break;
+				
+				case 5:
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+				break;
+			}
+			
+		}
 		
 	}
 	
