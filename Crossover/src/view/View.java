@@ -454,10 +454,11 @@ public class View {
 		boolean removedEdge = true;
 		
 		for (Edge edge : edges ) {
-			if (edge.getType().equals(eReference) && 
+			if (((edge.getType().equals(eReference)) || (edge.getType().equals(eReference.getEOpposite()))) && 
 					(edge.getSource() == graphMap.get(referencedEObject) || 
 					edge.getTarget() == graphMap.get(referencedEObject))
 				) {
+				
 				foundEdge = true;
 				Node sourceNode = edge.getSource();
 				Node targetNode = edge.getTarget();
@@ -905,17 +906,22 @@ public class View {
 		
 		for (Edge edge : graph.getEdges()) {
 			if(edge.getSource() == sourceNode && edge.getTarget() == targetNode) {
-				foundEdge = edge;
-				break;
+				if (edge.getType() == eReference || edge.getType().getEOpposite() == eReference) {
+					foundEdge = edge;
+					break;
+				}
 			}
 			
 			if(edge.getSource() == targetNode && edge.getTarget() == sourceNode) {
-				foundEdge = edge;
-				break;
+				if (edge.getType() == eReference || edge.getType().getEOpposite() == eReference) {
+					foundEdge = edge;
+					break;
+				}
 			}
 		}
 		
 		if (foundEdge == null) return false;
+		
 		return contains(foundEdge, isDangling);
 	}
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<multiRefModel:container
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:multiRefModel="http://www.example.org/multiRefModel"
+    xsi:schemaLocation="http://www.example.org/multiRefModel multiReferenceModel.ecore">
+  <persons name="Steve"
+      owns="//@items.0"
+      leases="//@items.0"/>
+  <persons name="John"
+      owns="//@items.1"
+      leases="//@items.1"/>
+  <items name="Car"
+      isOwned="//@persons.0"
+      isLeased="//@persons.0"/>
+  <items name="House"
+      isOwned="//@persons.1"
+      isLeased="//@persons.1"/>
+</multiRefModel:container>

@@ -4793,4 +4793,158 @@ class ViewTest extends TestResources {
 		
 	}
 	
+	/**
+	 * Tests the handling of multiple {@link Edge edges} of different {@link Edge#getType() types} between the
+	 * same Objects.
+	 */
+	@Test
+	final void testMultipleEdgesOfDifferentTypesBetweenTheSameObjects () {
+		
+		// get eClasses eObjects, eReferences and eAttributes
+		
+		EClass[] eClasses = getEClassFromResource(MULTI_REF_MODEL_EORE, "person", "item", "container");
+		EClass personEClass = eClasses[0];
+		EClass itemEClass = eClasses[1];
+		EClass containerEClass = eClasses[2];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(personEClass, "name");
+		EReference personOwns = getEReferenceFromEClass(personEClass, "owns");
+		EReference personLeases = getEReferenceFromEClass(personEClass, "leases");
+		EReference itemIsOwned = getEReferenceFromEClass(itemEClass, "isOwned");
+		EReference itemIsLeased = getEReferenceFromEClass(itemEClass, "isLeased");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource(MULTI_REF_MODEL_INSTANCE_ONE,
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("Steve"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("John"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("Car"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("House")
+		);
+		
+		EObject stevePerson = map.get(0).iterator().next();
+		EObject carItem = map.get(2).iterator().next();
+		
+		// init a View with two nodes
+		
+		View multiRefView = new View(MULTI_REF_MODEL_INSTANCE_ONE);
+		multiRefView.extend(stevePerson);
+		multiRefView.extend(carItem);
+		
+		// test adding edges
+		
+		assertTrue(multiRefView.extend(stevePerson, carItem, personOwns));
+		
+		View copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.extend(stevePerson, carItem, itemIsOwned));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.extend(stevePerson, carItem, personOwns));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertTrue(multiRefView.extend(stevePerson, carItem, personLeases));
+		
+		assertEquals(2, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graph.getEdges().size());
+		
+		Set<EReference> actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		Set<EReference> expectedEdgeTypes = new HashSet<>(List.of(personOwns, personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		// test removing the edges by different methods
+		
+		View multiViewWithTwoEdges = multiRefView.copy();
+		
+		multiRefView.reduce(personOwns);
+		
+		assertEquals(2, multiRefView.graph.getNodes().size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		multiRefView.reduce(itemIsOwned);
+		
+		assertEquals(2, multiRefView.graph.getNodes().size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		assertTrue(multiRefView.reduce(stevePerson, carItem, personOwns));
+		
+		assertEquals(2, multiRefView.graph.getNodes().size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		assertTrue(multiRefView.reduce(carItem, stevePerson, itemIsOwned));
+		
+		assertEquals(2, multiRefView.graph.getNodes().size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.reduce(stevePerson, carItem, itemIsOwned));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertFalse(multiRefView.reduce(carItem, stevePerson, personOwns));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+	}
+	
+	private void assertContainsEdge (View view, EObject eObjectOne, EObject eObjectTwo, EReference eReference, EReference eOposite) {
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eReference, false));
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eReference, true));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eReference, false));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eReference, true));
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eOposite, false));
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eOposite, true));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eOposite, false));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eOposite, true));
+	}
+	
+	private void assertNotContainsEdge (View view, EObject eObjectOne, EObject eObjectTwo, EReference eReference, EReference eOposite) {
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eReference, false));
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eReference, true));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eReference, false));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eReference, true));
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eOposite, false));
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eOposite, true));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eOposite, false));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eOposite, true));
+	}
+	
 }

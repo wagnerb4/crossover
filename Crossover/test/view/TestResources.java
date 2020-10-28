@@ -41,6 +41,8 @@ public class TestResources {
 	protected static Resource CRACrossoverTest2_2;
 	protected static Resource CRACrossoverTest3_1;
 	protected static Resource CRACrossoverTest3_2;
+	protected static Resource MULTI_REF_MODEL_EORE;
+	protected static Resource MULTI_REF_MODEL_INSTANCE_ONE;
 
 	// setup
 	
@@ -63,6 +65,8 @@ public class TestResources {
 		CRACrossoverTest2_2 = resourceSet.getResource("CRACrossoverTest2.2.xmi");
 		CRACrossoverTest3_1 = resourceSet.getResource("CRACrossoverTest3.1.xmi");
 		CRACrossoverTest3_2 = resourceSet.getResource("CRACrossoverTest3.2.xmi");
+		MULTI_REF_MODEL_EORE = resourceSet.getResource("multiReferenceModel.ecore");
+		MULTI_REF_MODEL_INSTANCE_ONE = resourceSet.getResource("multiRefModelInstanceOne.xmi");
 	}
 	
 	// helper methods and tests of the helper methods
