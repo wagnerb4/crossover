@@ -134,7 +134,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
 	 * @param searchSpaceElements the search space elements to do the crossover on
 	 * @param problemPartSplitStrategy the strategy used to split up the problem part
-	 * @param problemPartEClasses a {@link List list} of {@link EClass eClasses} describing the problem part
+	 * @param problemPartEClasses a {@link List list} of all non-abstract {@link EClass eClasses} describing the problem part
 	 * @param problemPartEReferences a {@link List list} of {@link EReference eReferences} describing the problem part
 	 * @param searchSpaceElementSplitStrategy the strategy usedto split up the search space elements
 	 * @throws CrossoverUsageException if one of the parameters is null or the metamodel or searchSpaceElements are empty.
@@ -151,7 +151,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
 	 * @param searchSpaceElements the search space elements to do the crossover on
 	 * @param problemPartSplitStrategy the strategy used to split up the problem part
-	 * @param problemPartEClasses a {@link List list} of {@link EClass eClasses} describing the problem part
+	 * @param problemPartEClasses a {@link List list} of all non-abstract {@link EClass eClasses} describing the problem part
 	 * @param problemPartEReferences a {@link List list} of {@link EReference eReferences} describing the problem part
 	 * @param searchSpaceElementSplitStrategy the strategy usedto split up the search space elements
 	 * @param subMetaModelOfIntersection a {@link View view} on the {@literal metamodel} used to create the splits </br>

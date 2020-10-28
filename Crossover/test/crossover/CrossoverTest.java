@@ -65,10 +65,10 @@ class CrossoverTest extends TestResources {
 								NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException {
 		
 		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
-		EClass namedElementEClass = eClasses[0];
+		// EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
+		// EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -80,7 +80,7 @@ class CrossoverTest extends TestResources {
 		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
 		
 		runFindBorder (
-				List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass), 
+				List.of(classModelEClass, attributeEClass, methodEClass), 
 				List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency), 
 				List.of((EObject) classModelEClass, (EObject) attributeEClass, (EObject) methodEClass)
 		);
@@ -92,7 +92,7 @@ class CrossoverTest extends TestResources {
 		);
 		
 		runFindBorder (
-				List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass),
+				List.of(classModelEClass, attributeEClass, methodEClass),
 				List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency, featureIsEncapsulatedBy, classEncapsulates),
 				List.of((EObject) classModelEClass, (EObject) classModelClasses, (EObject) featureIsEncapsulatedBy, (EObject) classEncapsulates, (EObject) methodEClass, (EObject) attributeEClass)
 		);
@@ -135,7 +135,6 @@ class CrossoverTest extends TestResources {
 		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -162,7 +161,7 @@ class CrossoverTest extends TestResources {
 		};
 		
 		// create problemView and border
-		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		View problemPartView = new View(CRA_INSTANCE_ONE);
@@ -217,7 +216,6 @@ class CrossoverTest extends TestResources {
 		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -244,7 +242,7 @@ class CrossoverTest extends TestResources {
 		};
 		
 		// create problemView and border
-		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		View problemPartView = new View(CRA_INSTANCE_ONE);
@@ -334,7 +332,6 @@ class CrossoverTest extends TestResources {
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -371,7 +368,7 @@ class CrossoverTest extends TestResources {
 		subMetamodel.extend((EObject) classModelClasses);
 		
 		// create problemView and split
-		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
 		
 		View problemPartView = new View(CRA_INSTANCE_ONE);
@@ -404,7 +401,7 @@ class CrossoverTest extends TestResources {
 		
 		//  classModelClasses EReference in solution part
 		
-		problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		problemPartView = new View(CRA_INSTANCE_ONE);
@@ -449,7 +446,6 @@ class CrossoverTest extends TestResources {
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -484,7 +480,7 @@ class CrossoverTest extends TestResources {
 		View subMetamodel = new View(CRA_ECORE);
 		
 		// create problemView and split
-		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, classModelClasses, methodDataDependency, methodFunctionalDependency);
 		
 		View problemPartView = new View(CRA_INSTANCE_ONE);
@@ -544,7 +540,7 @@ class CrossoverTest extends TestResources {
 		
 		//  classModelClasses EReference in solution part
 		
-		problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		problemPartView = new View(CRA_INSTANCE_ONE);
@@ -622,7 +618,6 @@ class CrossoverTest extends TestResources {
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -635,7 +630,7 @@ class CrossoverTest extends TestResources {
 		EReference methodFunctionalDependency = getEReferenceFromEClass(methodEClass, "functionalDependency");
 		
 		// create problemView
-		List<EClass> problemPartClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		View problemPartSSEOne = new View(CRA_INSTANCE_ONE);
@@ -860,7 +855,6 @@ class CrossoverTest extends TestResources {
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -907,7 +901,7 @@ class CrossoverTest extends TestResources {
 		EObject classModel1SSETwo = map.get(5).iterator().next();
 		
 		// create problemView and border
-		List<EClass> problemPartEClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartEClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartEReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		Pair<Resource, Resource> searchSpaceElements = new Pair<Resource, Resource>(CRA_INSTANCE_ONE, CRA_INSTANCE_TWO);
@@ -1367,7 +1361,6 @@ class CrossoverTest extends TestResources {
 		EClass namedElementEClass = eClasses[0];
 		EClass classModelEClass = eClasses[1];
 		EClass classEClass = eClasses[2];
-		EClass featureEClass = eClasses[3];
 		EClass attributeEClass = eClasses[4];
 		EClass methodEClass = eClasses[5];
 		
@@ -1414,7 +1407,7 @@ class CrossoverTest extends TestResources {
 		EObject classModel1SSETwo = map.get(5).iterator().next();
 		
 		// create problemView and border
-		List<EClass> problemPartEClasses = List.of(namedElementEClass, classModelEClass, featureEClass, attributeEClass, methodEClass);
+		List<EClass> problemPartEClasses = List.of(classModelEClass, attributeEClass, methodEClass);
 		List<EReference> problemPartEReferences = List.of(classModelFeatures, methodDataDependency, methodFunctionalDependency);
 		
 		Pair<Resource, Resource> searchSpaceElements = new Pair<Resource, Resource>(CRA_INSTANCE_ONE, CRA_INSTANCE_TWO);

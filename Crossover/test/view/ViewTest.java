@@ -5133,6 +5133,4 @@ class ViewTest extends TestResources {
 		
 	}
 	
-	
-	
 }
