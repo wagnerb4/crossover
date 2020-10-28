@@ -318,6 +318,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		problemPartOne.union(partOfMatchedBorder);
 		
+		// can't use the extendByMissingEdges method because we don't want edges from the solution part
+		
 		for (Edge edge : problemPartView.getGraph().getEdges()) {
 			EObject sourceEObject = problemPartView.getObject(edge.getSource());
 			EObject targetEObject = problemPartView.getObject(edge.getTarget());
@@ -336,7 +338,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		// problemPartTwo.union(problemPartOne) results in a view equal to problemPartView
 		
 		problemPartTwo.completeDangling();
-		// problemPartTwo doesn't contain dangling edges anymore but it may contain non problemPart nodes
+		// problemPartTwo doesn't contain dangling edges anymore but it may contain solution part nodes
 		
 		List<EObject> toRemove = new ArrayList<>();
 		for (Node node : problemPartTwo.getGraph().getNodes()) {
@@ -347,6 +349,18 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		}
 		
 		toRemove.forEach(problemPartTwo::reduce);
+		
+		// now we need to make sure that all problem part nodes of the split except for the root are properly contained
+		problemPartOne.extendByContainers();
+		problemPartTwo.extendByContainers();
+		
+		// check whether there are solution part nodes in the views
+		View copyOfView = problemPartOne.copy();
+		copyOfView.subtract(problemPartView);
+		if (!copyOfView.isEmpty()) throw new IllegalStateException("All container types of problem part objects and references between them need to belong to the problem part too.");
+		copyOfView = problemPartTwo.copy();
+		copyOfView.subtract(problemPartView);
+		if (!copyOfView.isEmpty()) throw new IllegalStateException("All container types of problem part objects and references between them need to belong to the problem part too.");
 		
 		return new Pair<View, View>(problemPartOne, problemPartTwo);
 		
@@ -472,6 +486,33 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		 * and searchSpaceElementTwo to contain all elements of the searchSpaceElement.
 		 */
 		searchSpaceElementTwo.completeDangling();
+		
+		// Add containment features of nodes in searchSpaceElementTwo
+		if (searchSpaceElementTwo.getResource().getContents().size() != 1) throw new IllegalStateException("The resource of the second search space element must have exactly one root object.");
+		EObject rootEObject = searchSpaceElementTwo.getResource().getContents().get(0);
+		
+		for (Node node : searchSpaceElementTwo.getGraph().getNodes()) {
+			
+			EObject eObject = searchSpaceElementTwo.getObject(node);
+			
+			if (eObject == rootEObject) continue;
+			
+			EObject container = eObject.eContainer();
+			EReference containingEReference = eObject.eContainmentFeature();
+			
+			if (!searchSpaceElementTwo.contains(container)) {
+				boolean successfullyExtended = searchSpaceElementTwo.extend(container);
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
+			
+			if (!searchSpaceElementTwo.contains(container, eObject, containingEReference, false)) {
+				boolean successfullyExtended = searchSpaceElementTwo.extend(container, eObject, containingEReference);
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
+			
+		}
+		
+		// Combine the views with the matched subMetaModelOfIntersection.
 		
 		View matchedIntersection = problemPart.copy();
 		

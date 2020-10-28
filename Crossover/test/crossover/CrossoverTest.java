@@ -6,7 +6,6 @@ package crossover;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -25,14 +24,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.eclipse.emf.common.util.BasicEList;
-import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
-import org.eclipse.emf.ecore.EStructuralFeature;
-import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.interpreter.EGraph;
 import org.eclipse.emf.henshin.interpreter.Engine;
@@ -147,12 +142,14 @@ class CrossoverTest extends TestResources {
 		
 		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
 				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("1"),
 				eObject -> eObject.eGet(nameEAttribute).equals("2"),
 				eObject -> eObject.eGet(nameEAttribute).equals("4")
 		);
 		
-		EObject method2 = map.get(0).iterator().next();
-		EObject attribute4 = map.get(1).iterator().next();
+		EObject classModel1 = map.get(0).iterator().next();
+		EObject method2 = map.get(1).iterator().next();
+		EObject attribute4 = map.get(2).iterator().next();
 		
 		// create strategy
 		
@@ -186,6 +183,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		Pair<View, View> expectedPair = new Pair<View, View>(first, second);
 		
 		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
@@ -228,12 +226,14 @@ class CrossoverTest extends TestResources {
 		
 		Map<Integer, Set<EObject>> map = getEObjectsFromResource (
 				CRA_INSTANCE_ONE, 
+				eObject -> eObject.eGet(nameEAttribute).equals("1"),
 				eObject -> eObject.eGet(nameEAttribute).equals("2"),
 				eObject -> eObject.eGet(nameEAttribute).equals("4")
 		);
 		
-		EObject method2 = map.get(0).iterator().next();
-		EObject attribute4 = map.get(1).iterator().next();
+		EObject classModel1 = map.get(0).iterator().next();
+		EObject method2 = map.get(1).iterator().next();
+		EObject attribute4 = map.get(2).iterator().next();
 		
 		// create strategy
 		
@@ -269,6 +269,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		Pair<View, View> expectedPair = new Pair<View, View>(first, second);
 		
 		runSplitProblemPart(problemPartView, problemBorder, strategy, subMetamodel, expectedPair);
@@ -358,7 +359,7 @@ class CrossoverTest extends TestResources {
 		EObject attribute5 = map.get(1).iterator().next();
 		EObject class8 = map.get(3).iterator().next();
 		EObject class9 = map.get(4).iterator().next();
-		// EObject classModel1 = map.get(5).iterator().next();
+		EObject classModel1 = map.get(5).iterator().next();
 		
 		//  classModelClasses EReference in problem part
 		
@@ -384,6 +385,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		second.extend(classModelClasses);
 		Pair<View, View> problemSplit = new Pair<View, View>(first, second);
 		
@@ -393,6 +395,7 @@ class CrossoverTest extends TestResources {
 		
 		View expectedSecond = second.copy();
 		expectedSecond.extend(classEClass);
+		expectedSecond.extend(classModelClasses);
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		Pair<View, View> expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
@@ -416,6 +419,7 @@ class CrossoverTest extends TestResources {
 		second.reduce(methodEClass);
 		second.removeDangling();
 		second.extend(method2);
+		second.extend(classModel1, method2, classModelFeatures);
 		second.extend(method2, attribute4, methodDataDependency);
 		
 		problemSplit = new Pair<View, View>(first, second);
@@ -426,9 +430,9 @@ class CrossoverTest extends TestResources {
 		
 		expectedSecond = second.copy();
 		expectedSecond.extend(classEClass);
+		expectedSecond.extend(classModelClasses);
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
-		expectedSecond.extend(classModelClasses);
 		
 		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
@@ -496,6 +500,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		second.extend(classModelClasses);
 		Pair<View, View> problemSplit = new Pair<View, View>(first, second);
 		
@@ -523,6 +528,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		second.extend(classModel1, class9, classModelClasses);
 		problemSplit = new Pair<View, View>(first, second);
 		
@@ -532,6 +538,7 @@ class CrossoverTest extends TestResources {
 		
 		expectedSecond = second.copy();
 		expectedSecond.extend(classEClass);
+		expectedSecond.extend(classModelClasses);
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
 		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
@@ -556,6 +563,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2);
 		second.extend(method2, attribute4, methodDataDependency);
+		second.extend(classModel1, method2, classModelFeatures);
 		
 		problemSplit = new Pair<View, View>(first, second);
 		
@@ -565,10 +573,9 @@ class CrossoverTest extends TestResources {
 		
 		expectedSecond = second.copy();
 		expectedSecond.extend(classEClass);
+		expectedSecond.extend(classModelClasses);
 		expectedSecond.extend(class8, attribute4, classEncapsulates);
 		expectedSecond.extend(class9, attribute5, classEncapsulates);
-		expectedSecond.reduce(classModel1, class8,classModelClasses);
-		expectedSecond.reduce(classModel1, class9,classModelClasses);
 		
 		expectedSplit = new Pair<View, View>(expectedFirst, expectedSecond);
 		
@@ -847,7 +854,6 @@ class CrossoverTest extends TestResources {
 	 * Test method for {@link Crossover}. Tests the
 	 * complete procedure.
 	 */
-	@SuppressWarnings("unchecked")
 	@Test
 	final void testCrossover() throws CrossoverUsageException, ViewSetOperationException, IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		
@@ -937,6 +943,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2SSETwo);
 		second.extend(method2SSETwo, attribute4SSETwo, methodDataDependency);
+		second.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 		
 		Pair<View, View> problemSplitSSETwo = new Pair<View, View>(first, second);
 		
@@ -953,6 +960,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2SSEOne);
 		second.extend(method2SSEOne, attribute4SSEOne, methodDataDependency);
+		second.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
 		
 		Pair<View, View> problemSplitSSEOne = new Pair<View, View>(first, second);
 		
@@ -968,7 +976,7 @@ class CrossoverTest extends TestResources {
 		expectedSecond.extend(class7SSETwo);
 		expectedSecond.extend(class7SSETwo, attribute4SSETwo, classEncapsulates);
 		expectedSecond.extend(class7SSETwo, attribute5SSETwo, classEncapsulates);
-		expectedSecond.reduce(classModel1SSETwo, class7SSETwo, classModelClasses);
+		expectedSecond.extend(classModel1SSETwo, class7SSETwo, classModelClasses);
 		
 		Pair<View, View> splitOfSSETwo = new Pair<View, View>(expectedFirst, expectedSecond);
 		
@@ -984,8 +992,7 @@ class CrossoverTest extends TestResources {
 		expectedSecond.extend(classEClass);
 		expectedSecond.extend(class8SSEOne, attribute4SSEOne, classEncapsulates);
 		expectedSecond.extend(class9SSEOne, attribute5SSEOne, classEncapsulates);
-		expectedSecond.reduce(classModel1SSEOne, class8SSEOne,classModelClasses);
-		expectedSecond.reduce(classModel1SSEOne, class9SSEOne,classModelClasses);
+		expectedSecond.extend(classModelClasses);
 		
 		Pair<View, View> splitOfSSEOne = new Pair<View, View>(expectedFirst, expectedSecond);
 		
@@ -998,6 +1005,7 @@ class CrossoverTest extends TestResources {
 			View problemPartIntersection = new View(CRA_INSTANCE_TWO);
 			problemPartIntersection.extend(classModel1SSETwo);
 			problemPartIntersection.extend(method2SSETwo);
+			problemPartIntersection.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 			
 			assertTrue(problemPartIntersection.equals(actualValue));
 			
@@ -1009,6 +1017,8 @@ class CrossoverTest extends TestResources {
 			intersectionOfSSETwo.extend(classModel1SSETwo);
 			intersectionOfSSETwo.extend(method2SSETwo);
 			intersectionOfSSETwo.extend(class7SSETwo);
+			intersectionOfSSETwo.extend(classModel1SSETwo, class7SSETwo, classModelClasses);
+			intersectionOfSSETwo.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 			
 			assertTrue(intersectionOfSSETwo.equals(actualValue));
 			
@@ -1020,6 +1030,8 @@ class CrossoverTest extends TestResources {
 			intersectionOfSSEOne.extend(classModel1SSEOne);
 			intersectionOfSSEOne.extend(method2SSEOne);
 			intersectionOfSSEOne.extend(classEClass);
+			intersectionOfSSEOne.extend(classModelClasses);
+			intersectionOfSSEOne.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
 			
 			assertTrue(intersectionOfSSEOne.equals(actualValue));
 			
@@ -1033,6 +1045,9 @@ class CrossoverTest extends TestResources {
 			assertNotNull(pair);
 			assertNotNull(pair.getFirst());
 			assertNotNull(pair.getSecond());
+			assertEquals(1, pair.getFirst().getContents().size());
+			assertEquals(1, pair.getSecond().getContents().size());
+			
 			foundCrossoverPairs.add(
 					new Pair<Resource, Resource>(
 							pair.getFirst(),
@@ -1041,312 +1056,53 @@ class CrossoverTest extends TestResources {
 			);
 		}
 		
-		assertEquals(3, foundCrossoverPairs.size());
+		assertEquals(5, foundCrossoverPairs.size());
 		
-		View actualCrossoverOneFirst = null;
-		View actualCrossoverOneSecond = null;
-		View actualCrossoverTwoFirst = null;
-		View actualCrossoverTwoSecond = null;
-		View actualCrossoverThreeFirst = null;
-		View actualCrossoverThreeSecond = null;
+		/**
+		 * CRACrossoverTest3 comes first because the intersection is build upon the smallest subset.
+		 * After CRACrossoverTest3 comes CRACrossoverTest1 and CRACrossoverTest2 their order is determined
+		 * on whether the class of the intersection is first matched with class8 or class9 so I just tried it out.
+		 * The last two found crossovers pairs are exactly the same as the ones before them as the inclution of the
+		 * classModelClasses EReference in the intersection does not change the crossovers.
+		 */
 		
-		// crossover one
-		List<EObject> unconnectedClassesFirst = new ArrayList<>();
-		EObject classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(0).getFirst().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesFirst.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		EStructuralFeature.Setting setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		EList<EObject> classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		EList<EObject> newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesFirst);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(0).getFirst().getContents().removeAll(unconnectedClassesFirst);
-		
-		View firstCrossover = new View(foundCrossoverPairs.get(0).getFirst());
-		firstCrossover.extendByAllNodes();
-		firstCrossover.extendByMissingEdges();
-		
-		List<EObject> unconnectedClassesSecond = new ArrayList<>();
-		classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(0).getSecond().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesSecond.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesSecond);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(0).getSecond().getContents().removeAll(unconnectedClassesSecond);
-		
-		View secondCrossover = new View(foundCrossoverPairs.get(0).getSecond());
-		secondCrossover.extendByAllNodes();
-		secondCrossover.extendByMissingEdges();
-		
-		int key = checkCaseForTestCrossover(firstCrossover, secondCrossover, unconnectedClassesFirst, unconnectedClassesSecond);
-		switch (key) {
-			case 1:
-				actualCrossoverTwoFirst = firstCrossover;
-				actualCrossoverTwoSecond = secondCrossover;
-			break;
+		for (int i = 0; i < 5; i++) {
 			
-			case 2:
-				actualCrossoverOneFirst = firstCrossover;
-				actualCrossoverOneSecond = secondCrossover;
-			break;
-	
-			case 3:
-				actualCrossoverThreeFirst = firstCrossover;
-				actualCrossoverThreeSecond = secondCrossover;
-			break;
+			View firstView = new View(foundCrossoverPairs.get(i).getFirst());
+			firstView.extendByAllNodes();
+			firstView.extendByMissingEdges();
+			View secondView = new View(foundCrossoverPairs.get(i).getSecond());
+			secondView.extendByAllNodes();
+			secondView.extendByMissingEdges();
 			
-			default:
-				fail("Unexpected case: " + key);
-			break;
-		}
-		
-		// crossover two
-		unconnectedClassesFirst = new ArrayList<>();
-		classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(1).getFirst().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesFirst.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesFirst);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(1).getFirst().getContents().removeAll(unconnectedClassesFirst);
-		
-		firstCrossover = new View(foundCrossoverPairs.get(1).getFirst());
-		firstCrossover.extendByAllNodes();
-		firstCrossover.extendByMissingEdges();
-		
-		unconnectedClassesSecond = new ArrayList<>();
-		classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(1).getSecond().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesSecond.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesSecond);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(1).getSecond().getContents().removeAll(unconnectedClassesSecond);
-		
-		secondCrossover = new View(foundCrossoverPairs.get(1).getSecond());
-		secondCrossover.extendByAllNodes();
-		secondCrossover.extendByMissingEdges();
-		
-		key = checkCaseForTestCrossover(firstCrossover, secondCrossover, unconnectedClassesFirst, unconnectedClassesSecond);
-		switch (key) {
-			case 1:
-				actualCrossoverTwoFirst = firstCrossover;
-				actualCrossoverTwoSecond = secondCrossover;
-			break;
-			
-			case 2:
-				actualCrossoverOneFirst = firstCrossover;
-				actualCrossoverOneSecond = secondCrossover;
-			break;
-	
-			case 3:
-				actualCrossoverThreeFirst = firstCrossover;
-				actualCrossoverThreeSecond = secondCrossover;
-			break;
-			
-			default:
-				fail("Unexpected case: " + key);
-			break;
-		}
-		
-		// crossover three
-		unconnectedClassesFirst = new ArrayList<>();
-		classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(2).getFirst().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesFirst.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesFirst);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(2).getFirst().getContents().removeAll(unconnectedClassesFirst);
-		
-		firstCrossover = new View(foundCrossoverPairs.get(2).getFirst());
-		firstCrossover.extendByAllNodes();
-		firstCrossover.extendByMissingEdges();
-		
-		unconnectedClassesSecond = new ArrayList<>();
-		classModel = null;
-		
-		for (EObject eObject : foundCrossoverPairs.get(2).getSecond().getContents()) {
-			if (eObject.eClass() == classEClass) {
-				unconnectedClassesSecond.add(eObject);
-			} else if ( eObject.eClass() == classModelEClass ) {
-				assertNull(classModel);
-				classModel = eObject;
-			} else {
-				fail("Unexpected Root");
-			}
-		}
-		
-		assertNotNull(classModel);
-		setting = ((InternalEObject) classModel).eSetting(classModelClasses);
-		classes = (EList<EObject>) classModel.eGet(classModelClasses);
-		newClasses = new BasicEList<>();
-		newClasses.addAll(classes);
-		newClasses.addAll(unconnectedClassesSecond);
-	    setting.set(newClasses);
-	    foundCrossoverPairs.get(2).getSecond().getContents().removeAll(unconnectedClassesSecond);
-		
-		secondCrossover = new View(foundCrossoverPairs.get(2).getSecond());
-		secondCrossover.extendByAllNodes();
-		secondCrossover.extendByMissingEdges();
-		
-		key = checkCaseForTestCrossover(firstCrossover, secondCrossover, unconnectedClassesFirst, unconnectedClassesSecond);
-		switch (key) {
-			case 1:
-				actualCrossoverTwoFirst = firstCrossover;
-				actualCrossoverTwoSecond = secondCrossover;
-			break;
-			
-			case 2:
-				actualCrossoverOneFirst = firstCrossover;
-				actualCrossoverOneSecond = secondCrossover;
-			break;
-	
-			case 3:
-				actualCrossoverThreeFirst = firstCrossover;
-				actualCrossoverThreeSecond = secondCrossover;
-			break;
-			
-			default:
-				fail("Unexpected case: " + key);
-			break;
-		}
-		
-		assertExistsOnlyOneBijection(CRACrossoverTest1_1, actualCrossoverOneFirst);
-		assertExistsOnlyOneBijection(CRACrossoverTest1_2, actualCrossoverOneSecond);
-		
-		assertExistsOnlyOneBijection(CRACrossoverTest2_1, actualCrossoverTwoFirst);
-		assertExistsOnlyOneBijection(CRACrossoverTest2_2, actualCrossoverTwoSecond);
-		
-		assertExistsOnlyOneBijection(CRACrossoverTest3_1, actualCrossoverThreeFirst);
-		assertExistsOnlyOneBijection(CRACrossoverTest3_2, actualCrossoverThreeSecond);
-		
-	}
-	
-	/**
-	 * Checks wich case the returned crossover pair of the testCrossover Method is by checking the number of unconnected classes and their references
-	 * @param first a {@link View} on the first element of an actual crossover pair
-	 * @param second a {@link View} on the second element of an actual crossover pair
-	 * @param unconnectedClassesFirst a list of unconnected class-{@link EObject eObjects} from the {@link View first crossover}
-	 * @param unconnectedClassesSecond a list of unconnected class-{@link EObject eObjects} from the {@link View second crossover}
-	 * @return Retruns either 1, 2 or 3 to specify the case or fails when something unexpected happens.
-	 */
-	private int checkCaseForTestCrossover (View first, View second, List<EObject> unconnectedClassesFirst, List<EObject> unconnectedClassesSecond) {
-		
-		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
-		EClass namedElementEClass = eClasses[0];
-		// EClass classModelEClass = eClasses[1];
-		EClass classEClass = eClasses[2];
-		// EClass featureEClass = eClasses[3];
-		EClass attributeEClass = eClasses[4];
-		// EClass methodEClass = eClasses[5];
-		
-		EAttribute nameEAttribute = getEAttributeFromEClass(namedElementEClass, "name");
-		EReference classEncapsulates = getEReferenceFromEClass(classEClass, "encapsulates");
-		
-		if (unconnectedClassesFirst.size() == 1 && unconnectedClassesSecond.size() == 0) {
-			
-			Object object = unconnectedClassesFirst.get(0).eGet(classEncapsulates);
-			assertTrue(object instanceof EList<?>);
-			@SuppressWarnings("unchecked")
-			EList<EObject> list = (EList<EObject>) object;
-			assertEquals(1, list.size());
-			EObject attributEObject = list.get(0);
-			assertTrue(attributEObject.eClass() == attributeEClass);
-			String name = (String) attributEObject.eGet(nameEAttribute);
-			
-			if (name.equals("4")) {
+			switch (i + 1) {
+				case 1:
+					assertExistsOnlyOneBijection(CRACrossoverTest3_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest3_2, secondView);
+				break;
 				
-				return 1;
+				case 2:
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+				break;
 				
-			} else if (name.equals("5")) {
+				case 3:
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+				break;
 				
-
-				return 2;
+				case 4:
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+				break;
 				
-			} else {
-				fail("Unexpected attribute name:" + name);
+				case 5:
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+				break;
 			}
 			
-			
-		} else if (unconnectedClassesFirst.size() == 2 && unconnectedClassesSecond.size() == 1) {
-			
-			return 3;
-			
-		} else {
-			fail("Unexpected number of unconnected classes in crossover pairs: " + unconnectedClassesFirst.size() + " / " + unconnectedClassesSecond.size() );
 		}
-		
-		return -1;
 		
 	}
 	
@@ -1448,6 +1204,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2SSETwo);
 		second.extend(method2SSETwo, attribute4SSETwo, methodDataDependency);
+		second.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 		
 		Pair<View, View> problemSplitSSETwo = new Pair<View, View>(first, second);
 		
@@ -1464,6 +1221,7 @@ class CrossoverTest extends TestResources {
 		second.removeDangling();
 		second.extend(method2SSEOne);
 		second.extend(method2SSEOne, attribute4SSEOne, methodDataDependency);
+		second.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
 		
 		Pair<View, View> problemSplitSSEOne = new Pair<View, View>(first, second);
 		
@@ -1508,6 +1266,7 @@ class CrossoverTest extends TestResources {
 			View problemPartIntersection = new View(CRA_INSTANCE_TWO);
 			problemPartIntersection.extend(classModel1SSETwo);
 			problemPartIntersection.extend(method2SSETwo);
+			problemPartIntersection.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 			
 			assertTrue(problemPartIntersection.equals(actualValue));
 			
@@ -1520,6 +1279,7 @@ class CrossoverTest extends TestResources {
 			intersectionOfSSETwo.extend(method2SSETwo);
 			intersectionOfSSETwo.extend(class7SSETwo);
 			intersectionOfSSETwo.extend(classModel1SSETwo, class7SSETwo, classModelClasses);
+			intersectionOfSSETwo.extend(classModel1SSETwo, method2SSETwo, classModelFeatures);
 			
 			assertTrue(intersectionOfSSETwo.equals(actualValue));
 			
@@ -1532,6 +1292,7 @@ class CrossoverTest extends TestResources {
 			intersectionOfSSEOne.extend(method2SSEOne);
 			intersectionOfSSEOne.extend(classEClass);
 			intersectionOfSSEOne.extend(classModelClasses);
+			intersectionOfSSEOne.extend(classModel1SSEOne, method2SSEOne, classModelFeatures);
 			
 			assertTrue(intersectionOfSSEOne.equals(actualValue));
 			
@@ -1567,6 +1328,7 @@ class CrossoverTest extends TestResources {
 		 */
 		
 		for (int i = 0; i < 5; i++) {
+			
 			View firstView = new View(foundCrossoverPairs.get(i).getFirst());
 			firstView.extendByAllNodes();
 			firstView.extendByMissingEdges();

@@ -819,6 +819,37 @@ public class View {
 	}
 	
 	/**
+	 * Adds all {@link EObject eObjects} and references to the {@link View} that
+	 * are {@link EObject#eContainer() containers} of {@link EObject eObjects} in the {@link View}.
+	 */
+	public void extendByContainers() {
+		
+		EObject rootEObject = resource.getContents().get(0);
+		
+		for (Node node : graph.getNodes()) {
+			
+			EObject eObject = getObject(node);
+			
+			if (eObject == rootEObject) continue;
+			
+			EObject container = eObject.eContainer();
+			EReference containingEReference = eObject.eContainmentFeature();
+			
+			if (!contains(container)) {
+				boolean successfullyExtended = extend(container);
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
+			
+			if (!contains(container, eObject, containingEReference, false)) {
+				boolean successfullyExtended = extend(container, eObject, containingEReference);
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
+			
+		}
+		
+	}
+	
+	/**
 	 * Reduces the {@link View} by any elements not part of the given {@link View viewOnMetamodel} and extends it by all that are.
 	 * @param viewOnMetamodel a {@link View view} on the meta-model of the {@link View#resource resource}
 	 * @return Returns {@code true} if the given {@link View viewOnMetamodel} and its {@link Resource resource} represent
