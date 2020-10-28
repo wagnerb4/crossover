@@ -147,7 +147,7 @@ public class View {
 		
 		while (iterator.hasNext()) {
 			EObject eObject = (EObject) iterator.next();
-			if (eObject.eClass().equals(eClass)) {
+			if (eObject.eClass().equals(eClass) || eObject.eClass().getEAllSuperTypes().contains(eClass)) {
 				foundMatch = true;
 				addedSuccessfull &= extend(eObject);
 			}
@@ -312,7 +312,7 @@ public class View {
 		
 		while (iterator.hasNext()) {
 			EObject eObject = (EObject) iterator.next();
-			if (eObject.eClass().equals(eClass)) {
+			if (eObject.eClass().equals(eClass) || eObject.eClass().getEAllSuperTypes().contains(eClass)) {
 				foundMatch = true;
 				removedSuccessfully &= reduce(eObject);
 			}

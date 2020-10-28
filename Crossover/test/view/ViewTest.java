@@ -4793,6 +4793,8 @@ class ViewTest extends TestResources {
 		
 	}
 	
+	// multiple edges of different types between the same objects
+	
 	/**
 	 * Tests the handling of multiple {@link Edge edges} of different {@link Edge#getType() types} between the
 	 * same Objects.
@@ -4946,5 +4948,191 @@ class ViewTest extends TestResources {
 		assertFalse(view.contains(eObjectTwo, eObjectOne, eOposite, false));
 		assertFalse(view.contains(eObjectTwo, eObjectOne, eOposite, true));
 	}
+	
+	/**
+	 * Tests the handling of multiple dangling {@link Edge edges} of different {@link Edge#getType() types} between the
+	 * same Objects.
+	 */
+	@Test
+	final void testMultipleDanglingEdgesOfDifferentTypesBetweenTheSameObjects () {
+		
+		// get eClasses eObjects, eReferences and eAttributes
+		
+		EClass[] eClasses = getEClassFromResource(MULTI_REF_MODEL_EORE, "person", "item", "container");
+		EClass personEClass = eClasses[0];
+		EClass itemEClass = eClasses[1];
+		EClass containerEClass = eClasses[2];
+		
+		EAttribute nameEAttribute = getEAttributeFromEClass(personEClass, "name");
+		EReference personOwns = getEReferenceFromEClass(personEClass, "owns");
+		EReference personLeases = getEReferenceFromEClass(personEClass, "leases");
+		EReference itemIsOwned = getEReferenceFromEClass(itemEClass, "isOwned");
+		EReference itemIsLeased = getEReferenceFromEClass(itemEClass, "isLeased");
+		
+		Map<Integer, Set<EObject>> map = getEObjectsFromResource(MULTI_REF_MODEL_INSTANCE_ONE,
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("Steve"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("John"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("Car"),
+				(eObject) -> eObject.eClass() != containerEClass && eObject.eGet(nameEAttribute).equals("House")
+		);
+		
+		EObject stevePerson = map.get(0).iterator().next();
+		EObject carItem = map.get(2).iterator().next();
+		
+		// init a View with one node
+		
+		View multiRefView = new View(MULTI_REF_MODEL_INSTANCE_ONE);
+		multiRefView.extend(stevePerson);
+		
+		// test adding edges
+		
+		assertTrue(multiRefView.extend(stevePerson, carItem, personOwns));
+		
+		View copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.extend(stevePerson, carItem, itemIsOwned));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.extend(stevePerson, carItem, personOwns));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertTrue(multiRefView.extend(stevePerson, carItem, personLeases));
+		
+		assertEquals(1, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graphMap.size());
+		assertEquals(2, multiRefView.objectMap.size());
+		assertEquals(2, multiRefView.graph.getEdges().size());
+		
+		Set<EReference> actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		Set<EReference> expectedEdgeTypes = new HashSet<>(List.of(personOwns, personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		// test removing the edges by different methods
+		
+		View multiViewWithTwoEdges = multiRefView.copy();
+		
+		multiRefView.reduce(personOwns);
+		
+		assertEquals(1, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graphMap.size());
+		assertEquals(2, multiRefView.objectMap.size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		multiRefView.reduce(itemIsOwned);
+		
+		assertEquals(1, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graphMap.size());
+		assertEquals(2, multiRefView.objectMap.size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		assertTrue(multiRefView.reduce(stevePerson, carItem, personOwns));
+		
+		assertEquals(1, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graphMap.size());
+		assertEquals(2, multiRefView.objectMap.size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		assertTrue(multiRefView.reduce(carItem, stevePerson, itemIsOwned));
+		
+		assertEquals(1, multiRefView.graph.getNodes().size());
+		assertEquals(2, multiRefView.graphMap.size());
+		assertEquals(2, multiRefView.objectMap.size());
+		assertEquals(1, multiRefView.graph.getEdges().size());
+		
+		actualEdgeTypes = multiRefView.graph.getEdges().stream().map(Edge::getType).collect(Collectors.toSet());
+		expectedEdgeTypes = new HashSet<>(List.of(personLeases));
+		assertEquals(expectedEdgeTypes, actualEdgeTypes);
+		
+		assertNotContainsEdge(multiRefView, stevePerson, carItem, personOwns, itemIsOwned);
+		assertContainsDanglingEdge(multiRefView, stevePerson, carItem, personLeases, itemIsLeased);
+		
+		multiRefView = multiViewWithTwoEdges.copy();
+		
+		copyOfView = multiRefView.copy();
+		assertFalse(multiRefView.reduce(stevePerson, carItem, itemIsOwned));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+		assertFalse(multiRefView.reduce(carItem, stevePerson, personOwns));
+		assertTrue(copyOfView.equals(multiRefView));
+		
+	}
+	
+	private void assertContainsDanglingEdge (View view, EObject eObjectOne, EObject eObjectTwo, EReference eReference, EReference eOposite) {
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eReference, true));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eReference, true));
+		assertTrue(view.contains(eObjectOne, eObjectTwo, eOposite, true));
+		assertTrue(view.contains(eObjectTwo, eObjectOne, eOposite, true));
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eReference, false));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eReference, false));
+		assertFalse(view.contains(eObjectOne, eObjectTwo, eOposite, false));
+		assertFalse(view.contains(eObjectTwo, eObjectOne, eOposite, false));
+	}
+	
+	// test handling of super classes
+	
+	/**
+	 * Tests the {@link View#extend(EClass)} and {@link View#reduce(EClass)} methods on abstract supertypes.
+	 */
+	@Test
+	final void testSuperTypes () {
+		
+		EClass[] eClasses = getEClassFromResource(CRA_ECORE, "NamedElement", "ClassModel", "Class", "Feature", "Attribute", "Method");
+		EClass namedElementEClass = eClasses[0];
+		// EClass classModelEClass = eClasses[1];
+		// EClass classEClass = eClasses[2];
+		EClass featureEClass = eClasses[3];
+		EClass attributeEClass = eClasses[4];
+		EClass methodEClass = eClasses[5];
+		
+		View craView = new View(CRA_INSTANCE_ONE);
+		View fullCRAView = new View(CRA_INSTANCE_ONE);
+		fullCRAView.extendByAllNodes();
+		
+		assertTrue(craView.extend(namedElementEClass));
+		assertTrue(craView.equals(fullCRAView));
+		
+		View expectedReducedView = craView.copy();
+		expectedReducedView.reduce(attributeEClass);
+		expectedReducedView.reduce(methodEClass);
+		
+		assertTrue(craView.reduce(featureEClass));
+		assertTrue(craView.equals(expectedReducedView));
+		
+	}
+	
+	
 	
 }
