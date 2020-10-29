@@ -760,4 +760,77 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		};
 	}
 
+	
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((intersectionOfSSEOne == null) ? 0 : intersectionOfSSEOne.hashCode());
+		result = prime * result + ((intersectionOfSSETwo == null) ? 0 : intersectionOfSSETwo.hashCode());
+		result = prime * result + ((problemPartIntersection == null) ? 0 : problemPartIntersection.hashCode());
+		result = prime * result + ((problemPartSSEOne == null) ? 0 : problemPartSSEOne.hashCode());
+		result = prime * result + ((problemPartSSETwo == null) ? 0 : problemPartSSETwo.hashCode());
+		result = prime * result + ((problemSplitSSEOne == null) ? 0 : problemSplitSSEOne.hashCode());
+		result = prime * result + ((problemSplitSSETwo == null) ? 0 : problemSplitSSETwo.hashCode());
+		result = prime * result + ((splitOfSSEOne == null) ? 0 : splitOfSSEOne.hashCode());
+		result = prime * result + ((splitOfSSETwo == null) ? 0 : splitOfSSETwo.hashCode());
+		return result;
+	}
+
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof Crossover))
+			return false;
+		Crossover other = (Crossover) obj;
+		if (intersectionOfSSEOne == null) {
+			if (other.intersectionOfSSEOne != null)
+				return false;
+		} else if (!intersectionOfSSEOne.equals(other.intersectionOfSSEOne))
+			return false;
+		if (intersectionOfSSETwo == null) {
+			if (other.intersectionOfSSETwo != null)
+				return false;
+		} else if (!intersectionOfSSETwo.equals(other.intersectionOfSSETwo))
+			return false;
+		if (problemPartIntersection == null) {
+			if (other.problemPartIntersection != null)
+				return false;
+		} else if (!problemPartIntersection.equals(other.problemPartIntersection))
+			return false;
+		if (problemPartSSEOne == null) {
+			if (other.problemPartSSEOne != null)
+				return false;
+		} else if (!problemPartSSEOne.equals(other.problemPartSSEOne))
+			return false;
+		if (problemPartSSETwo == null) {
+			if (other.problemPartSSETwo != null)
+				return false;
+		} else if (!problemPartSSETwo.equals(other.problemPartSSETwo))
+			return false;
+		if (problemSplitSSEOne == null) {
+			if (other.problemSplitSSEOne != null)
+				return false;
+		} else if (!problemSplitSSEOne.equals(other.problemSplitSSEOne))
+			return false;
+		if (problemSplitSSETwo == null) {
+			if (other.problemSplitSSETwo != null)
+				return false;
+		} else if (!problemSplitSSETwo.equals(other.problemSplitSSETwo))
+			return false;
+		if (splitOfSSEOne == null) {
+			if (other.splitOfSSEOne != null)
+				return false;
+		} else if (!splitOfSSEOne.equals(other.splitOfSSEOne))
+			return false;
+		if (splitOfSSETwo == null) {
+			if (other.splitOfSSETwo != null)
+				return false;
+		} else if (!splitOfSSETwo.equals(other.splitOfSSETwo))
+			return false;
+		return true;
+	}
+	
 }

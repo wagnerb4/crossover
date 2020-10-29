@@ -12,6 +12,14 @@ public class Pair<K, V> {
 	private final V second;
 	
 	/**
+	 * Convenience method.
+	 * Creates a new pair of the given arguments.
+	 */
+	public static <K, V> Pair<K, V> of(K first, V second) {
+		return new Pair<>(first, second);
+	};
+	
+	/**
 	 * Create a new pair of the given objects.
 	 * @param first the first of object of type {@code T}
 	 * @param second the second of object of type {@code T}
