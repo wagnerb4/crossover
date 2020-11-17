@@ -8,12 +8,12 @@
   </package>  
   <package id="2" language="java" name="crossover" project="Crossover" file="/Crossover/src/crossover" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="1034" width="734" x="578" y="-103"/>    
+    <position height="1034" width="1109" x="578" y="-103"/>    
     <display autosize="false" stereotype="true" sort-features="false" accessors="true"/>  
   </package>  
   <class id="3" language="java" name="view.View" project="Crossover" file="/Crossover/src/view/View.java" binary="false" 
     corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="170" y="536"/>    
+    <position height="-1" width="-1" x="167" y="546"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -22,7 +22,7 @@
   </class>  
   <class id="4" language="java" name="view.ViewFactory" project="Crossover" file="/Crossover/src/view/ViewFactory.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="223" y="67"/>    
+    <position height="-1" width="-1" x="216" y="47"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -31,7 +31,7 @@
   </class>  
   <class id="5" language="java" name="view.ViewSetOperationException" project="Crossover" 
     file="/Crossover/src/view/ViewSetOperationException.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="443" y="868"/>    
+    <position height="-1" width="-1" x="441" y="861"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -40,7 +40,7 @@
   </class>  
   <class id="6" language="java" name="crossover.MappingUtil" project="Crossover" 
     file="/Crossover/src/crossover/MappingUtil.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="841" y="75"/>    
+    <position height="-1" width="-1" x="962" y="418"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -49,7 +49,7 @@
   </class>  
   <class id="7" language="java" name="crossover.Pair" project="Crossover" file="/Crossover/src/crossover/Pair.java" 
     binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="1196" y="590"/>    
+    <position height="-1" width="-1" x="1297" y="805"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -58,7 +58,7 @@
   </class>  
   <interface id="8" language="java" name="crossover.Strategy" project="Crossover" 
     file="/Crossover/src/crossover/Strategy.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="1223" y="-27"/>    
+    <position height="-1" width="-1" x="953" y="114"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -67,8 +67,8 @@
   </interface>  
   <class id="9" language="java" name="crossover.Crossover" project="Crossover" 
     file="/Crossover/src/crossover/Crossover.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="820" y="306"/>    
-    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+    <position height="277" width="650" x="593" y="271"/>    
+    <display autosize="false" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
@@ -76,7 +76,7 @@
   </class>  
   <class id="10" language="java" name="crossover.CrossoverUsageException" project="Crossover" 
     file="/Crossover/src/crossover/CrossoverUsageException.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="1206" y="89"/>    
+    <position height="-1" width="-1" x="955" y="-21"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
@@ -85,151 +85,208 @@
   </class>  
   <class id="11" language="java" name="crossover.CustomSpan" project="Crossover" 
     file="/Crossover/src/crossover/CustomSpan.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="-1" width="-1" x="762" y="708"/>    
+    <position height="-1" width="-1" x="729" y="812"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="true" static="true"/>      
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </class>  
-  <association id="12">    
-    <end type="SOURCE" refId="5" navigable="false">      
-      <attribute id="13" name="savedState">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </attribute>      
-      <multiplicity id="14" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="15">    
-    <bendpoint x="468" y="616"/>    
+  <class id="12" language="java" name="crossover.SearchSpaceElementSplitStrategy" project="Crossover" 
+    file="/Crossover/src/crossover/SearchSpaceElementSplitStrategy.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="-1" width="-1" x="705" y="-18"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <class id="13" language="java" name="crossover.SimpleCrossover" project="Crossover" 
+    file="/Crossover/src/crossover/SimpleCrossover.java" binary="false" corner="BOTTOM_RIGHT">    
+    <position height="-1" width="-1" x="1468" y="117"/>    
+    <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
+      sort-features="false" accessors="true" visibility="true">      
+      <attributes public="true" package="true" protected="true" private="true" static="true"/>      
+      <operations public="true" package="true" protected="true" private="true" static="true"/>    
+    </display>  
+  </class>  
+  <association id="14">    
+    <bendpoint x="1281" y="542"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="16" name="intersectionOfSSETwo">        
-        <position height="0" width="0" x="0" y="0"/>      
+      <attribute id="15" name="splitOfSSETwo">        
+        <position height="15" width="78" x="1301" y="654"/>      
       </attribute>      
-      <multiplicity id="17" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="18">    
-    <bendpoint x="1192" y="304"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="19" name="splitOfSSETwo">        
-        <position height="15" width="78" x="1200" y="439"/>      
-      </attribute>      
-      <multiplicity id="20" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+      <multiplicity id="16" minimum="0" maximum="1">        
+        <position height="0" width="0" x="101" y="215"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="21">    
-    <bendpoint x="461" y="329"/>    
+  <association id="17">    
+    <end type="SOURCE" refId="13" navigable="false">      
+      <attribute id="18" name="metamodelProblemPartSplitStrategies"/>      
+      <multiplicity id="19" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="8" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="20">    
+    <end type="SOURCE" refId="13" navigable="false">      
+      <attribute id="21" name="crossovers"/>      
+      <multiplicity id="22" minimum="0" maximum="2147483647"/>    
+    </end>    
+    <end type="TARGET" refId="9" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="23">    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="22" name="intersectionOfSSEOne">        
-        <position height="15" width="114" x="358" y="409"/>      
+      <attribute id="24" name="splitOfSSEOne">        
+        <position height="17" width="78" x="1177" y="651"/>      
       </attribute>      
-      <multiplicity id="23" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+      <multiplicity id="25" minimum="0" maximum="1">        
+        <position height="0" width="0" x="101" y="215"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="7" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="26">    
+    <bendpoint x="374" y="400"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="27" name="intersectionOfSSEOne">        
+        <position height="17" width="114" x="368" y="407"/>      
+      </attribute>      
+      <multiplicity id="28" minimum="0" maximum="1">        
+        <position height="0" width="0" x="-3" y="10"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="24">    
-    <bendpoint x="451" y="225"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="25" name="problemPartSSETwo">        
-        <position height="15" width="107" x="389" y="287"/>      
-      </attribute>      
-      <multiplicity id="26" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
-  <association id="27">    
-    <bendpoint x="458" y="537"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="28" name="problemPartIntersection">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </attribute>      
-      <multiplicity id="29" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
-    </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
-    <display labels="true" multiplicity="true"/>  
-  </association>  
+  <realization id="29">    
+    <end type="SOURCE" refId="12"/>    
+    <end type="TARGET" refId="8"/>  
+  </realization>  
   <association id="30">    
-    <bendpoint x="458" y="726"/>    
-    <end type="SOURCE" refId="11" navigable="false">      
-      <attribute id="31" name="intersection">        
-        <position height="0" width="0" x="0" y="0"/>      
+    <bendpoint x="973" y="627"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="31" name="problemSplitSSEOne">        
+        <position height="15" width="107" x="1051" y="776"/>      
       </attribute>      
       <multiplicity id="32" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+        <position height="0" width="0" x="101" y="215"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="3" navigable="true"/>    
+    <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="33">    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="34" name="splitOfSSEOne">        
-        <position height="15" width="78" x="1050" y="465"/>      
-      </attribute>      
-      <multiplicity id="35" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
-      </multiplicity>    
+      <attribute id="34" name="DEFAULT_STRATEGY"/>      
+      <multiplicity id="35" minimum="0" maximum="1"/>    
     </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
+    <end type="TARGET" refId="12" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="36">    
+    <bendpoint x="468" y="616"/>    
     <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="37" name="problemPartSSEOne">        
-        <position height="15" width="107" x="354" y="475"/>      
+      <attribute id="37" name="intersectionOfSSETwo">        
+        <position height="17" width="114" x="388" y="578"/>      
       </attribute>      
       <multiplicity id="38" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+        <position height="0" width="0" x="-3" y="10"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <association id="39">    
-    <bendpoint x="928" y="677"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="40" name="problemSplitSSETwo">        
-        <position height="15" width="107" x="996" y="656"/>      
+    <bendpoint x="458" y="726"/>    
+    <end type="SOURCE" refId="11" navigable="false">      
+      <attribute id="40" name="intersection">        
+        <position height="17" width="62" x="348" y="642"/>      
       </attribute>      
       <multiplicity id="41" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+        <position height="0" width="0" x="-3" y="10"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="42">    
+    <end type="SOURCE" refId="5" navigable="false">      
+      <attribute id="43" name="savedState">        
+        <position height="17" width="61" x="346" y="741"/>      
+      </attribute>      
+      <multiplicity id="44" minimum="0" maximum="1">        
+        <position height="0" width="0" x="-3" y="10"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="45">    
+    <bendpoint x="458" y="537"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="46" name="problemPartIntersection">        
+        <position height="17" width="122" x="360" y="519"/>      
+      </attribute>      
+      <multiplicity id="47" minimum="0" maximum="1">        
+        <position height="0" width="0" x="-3" y="10"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="48">    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="49" name="problemPartSSEOne">        
+        <position height="17" width="108" x="332" y="472"/>      
+      </attribute>      
+      <multiplicity id="50" minimum="0" maximum="1">        
+        <position height="0" width="0" x="-3" y="10"/>      
+      </multiplicity>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="51">    
+    <bendpoint x="928" y="677"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="52" name="problemSplitSSETwo">        
+        <position height="17" width="108" x="1010" y="636"/>      
+      </attribute>      
+      <multiplicity id="53" minimum="0" maximum="1">        
+        <position height="0" width="0" x="101" y="215"/>      
       </multiplicity>    
     </end>    
     <end type="TARGET" refId="7" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <association id="42">    
-    <bendpoint x="946" y="534"/>    
-    <end type="SOURCE" refId="9" navigable="false">      
-      <attribute id="43" name="problemSplitSSEOne">        
-        <position height="15" width="107" x="950" y="561"/>      
+  <association id="54">    
+    <bendpoint x="386" y="231"/>    
+    <end type="SOURCE" refId="12" navigable="false">      
+      <attribute id="55" name="problemSplitPart">        
+        <position height="17" width="89" x="398" y="226"/>      
       </attribute>      
-      <multiplicity id="44" minimum="0" maximum="1">        
-        <position height="0" width="0" x="0" y="0"/>      
+      <multiplicity id="56" minimum="0" maximum="1"/>    
+    </end>    
+    <end type="TARGET" refId="3" navigable="true"/>    
+    <display labels="true" multiplicity="true"/>  
+  </association>  
+  <association id="57">    
+    <bendpoint x="423" y="331"/>    
+    <end type="SOURCE" refId="9" navigable="false">      
+      <attribute id="58" name="problemPartSSETwo">        
+        <position height="17" width="108" x="440" y="309"/>      
+      </attribute>      
+      <multiplicity id="59" minimum="0" maximum="1">        
+        <position height="0" width="0" x="-3" y="10"/>      
       </multiplicity>    
     </end>    
-    <end type="TARGET" refId="7" navigable="true"/>    
+    <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
   <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 

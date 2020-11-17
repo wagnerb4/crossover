@@ -311,6 +311,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		
 		View problemPartTwo = remainderView.copy();
 		problemPartTwo.union(matchedIntersection);
+		problemPartTwo.removeDangling();
 		
 		View partOfMatchedBorder = matchedBorder.copy();
 		strategy.apply(partOfMatchedBorder);

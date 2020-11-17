@@ -305,7 +305,7 @@ public class SimpleCrossover implements Runnable {
 	}
 	
 	/**
-	 * @param chance the chance to stop removing nodes from the view after half of the nodes have been removed
+	 * @param chance the chance to stop removing nodes from the view (each time) after half of the nodes have been removed
 	 * @return Returns a {@link Strategy} that removes random nodes from the view and all dangling edges.
 	 */
 	public static Strategy createRandomProblemSplitStrategy (double chance) {
@@ -314,12 +314,16 @@ public class SimpleCrossover implements Runnable {
 			int amountOfNodes = view.getGraph().getNodes().size();
 			int half = amountOfNodes / 2;
 			
-			// after 'half' times the chance to quit the loop is 'chance'
-			double changeToContinue = Math.pow(1 - chance, 1 / half); 
-			
-			do {
+			for (int i = 0; i < amountOfNodes; i++) {
+				
 				view.reduce(view.getObject(view.getRandomNode()));
-			} while (Math.random() <= changeToContinue && view.getGraph().getNodes().size() > 0);
+				
+				if (i >= half) {
+					if (Math.random() <= chance) {
+						break;
+					}
+				}
+			}
 			
 			view.removeDangling();
 			
