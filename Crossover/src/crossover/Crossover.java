@@ -14,7 +14,6 @@ import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceImpl;
 import org.eclipse.emf.henshin.interpreter.Change;
 import org.eclipse.emf.henshin.interpreter.EGraph;
@@ -130,8 +129,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	private Crossover () {}
 	
 	/**
-	 * Creates a new Crossover between the given {@link ResourceSet searchSpaceElements}.
-	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
+	 * Creates a new Crossover between the given {@link Resource searchSpaceElements}.
+	 * @param metamodel the meta-model for the {@link Resource searchSpaceElements}.
 	 * @param searchSpaceElements the search space elements to do the crossover on
 	 * @param problemPartSplitStrategy the strategy used to split up the problem part
 	 * @param problemPartEClasses a {@link List list} of all non-abstract {@link EClass eClasses} describing the problem part
@@ -147,8 +146,8 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	}
 	
 	/**
-	 * Creates a new Crossover between the given {@link ResourceSet searchSpaceElements}.
-	 * @param metamodel the meta-model for the {@link ResourceSet searchSpaceElements}.
+	 * Creates a new Crossover between the given {@link Resource searchSpaceElements}.
+	 * @param metamodel the meta-model for the {@link Resource searchSpaceElements}.
 	 * @param searchSpaceElements the search space elements to do the crossover on
 	 * @param problemPartSplitStrategy the strategy used to split up the problem part
 	 * @param problemPartEClasses a {@link List list} of all non-abstract {@link EClass eClasses} describing the problem part
