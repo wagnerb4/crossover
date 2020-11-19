@@ -385,8 +385,6 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		while (treeIterator.hasNext()) {
 			EObject eObject = (EObject) treeIterator.next();
 			
-			
-			
 			if(eObject instanceof EClass) {	
 				
 				EClass eClass = (EClass) eObject;
@@ -397,9 +395,10 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 				for (EReference eReference : eReferences) {
 					if(!problemPartEReferences.contains(eReference)) {
 						
+						/*
 						if(problemPartEClasses.contains(eReference.getEContainingClass())) {
 							eClassestoExtend.add(eReference.getEContainingClass());
-						}
+						}*/
 						
 						if(problemPartEClasses.contains(eClass)) {
 							eClassestoExtend.add(eClass);
@@ -420,9 +419,10 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 						
 						if(!problemPartEClasses.contains(eReference.getEReferenceType())) {
 							borderView.extend(((EObject) eReference));
-							if(problemPartEClasses.contains(eReference.getEContainingClass())) {
+							
+							/*if(problemPartEClasses.contains(eReference.getEContainingClass())) {
 								eClassestoExtend.add(eReference.getEContainingClass());
-							}
+							}*/
 							
 							if(problemPartEClasses.contains(eClass)) {
 								eClassestoExtend.add(eClass);
@@ -440,6 +440,27 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 				
 			}
 			
+		}
+		
+		Set<EClass> possibleSuperTypes = new HashSet<EClass>();
+		borderView.getContainedEObjects().forEach(eObject -> {
+			if (eObject instanceof EClass) {
+				possibleSuperTypes.add((EClass) eObject);
+			}
+		});
+		
+		treeIterator = metamodel.getAllContents();
+		
+		while (treeIterator.hasNext()) {
+			EObject eObject = (EObject) treeIterator.next();
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				for (EClass superType : eClass.getEAllSuperTypes()) {
+					if (possibleSuperTypes.contains(superType)) {
+						borderView.extend(eObject);
+					}
+				}
+			}
 		}
 		
 		return borderView;
@@ -488,31 +509,6 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		 */
 		searchSpaceElementTwo.completeDangling();
 		
-		// Add containment features of nodes in searchSpaceElementTwo
-		if (searchSpaceElementTwo.getResource().getContents().size() != 1) throw new IllegalStateException("The resource of the second search space element must have exactly one root object.");
-		EObject rootEObject = searchSpaceElementTwo.getResource().getContents().get(0);
-		
-		for (Node node : searchSpaceElementTwo.getGraph().getNodes()) {
-			
-			EObject eObject = searchSpaceElementTwo.getObject(node);
-			
-			if (eObject == rootEObject) continue;
-			
-			EObject container = eObject.eContainer();
-			EReference containingEReference = eObject.eContainmentFeature();
-			
-			if (!searchSpaceElementTwo.contains(container)) {
-				boolean successfullyExtended = searchSpaceElementTwo.extend(container);
-				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
-			}
-			
-			if (!searchSpaceElementTwo.contains(container, eObject, containingEReference, false)) {
-				boolean successfullyExtended = searchSpaceElementTwo.extend(container, eObject, containingEReference);
-				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
-			}
-			
-		}
-		
 		// Combine the views with the matched subMetaModelOfIntersection.
 		
 		View matchedIntersection = problemPart.copy();
@@ -533,6 +529,10 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 		copyOfSearchSpaceElementTwo.union(matchedIntersection);
 		copyOfSearchSpaceElementTwo.removeDangling();
 		searchSpaceElementTwo.union(copyOfSearchSpaceElementTwo);
+		
+		// now we need to make sure that all problem part nodes of the split except for the root are properly contained
+		searchSpaceElementOne.extendByContainers();
+		searchSpaceElementTwo.extendByContainers();
 		
 		return new Pair<View, View>(searchSpaceElementOne, searchSpaceElementTwo);
 		
