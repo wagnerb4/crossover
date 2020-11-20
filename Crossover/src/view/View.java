@@ -825,6 +825,8 @@ public class View {
 	public void extendByContainers() {
 		
 		EObject rootEObject = resource.getContents().get(0);
+		List<EObject> toExtendNodes = new ArrayList<>();
+		List<List<EObject>> toExtendEdges = new ArrayList<>();
 		
 		for (Node node : graph.getNodes()) {
 			
@@ -836,15 +838,27 @@ public class View {
 			EReference containingEReference = eObject.eContainmentFeature();
 			
 			if (!contains(container)) {
-				boolean successfullyExtended = extend(container);
-				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+				toExtendNodes.add(container);
 			}
 			
 			if (!contains(container, eObject, containingEReference, false)) {
-				boolean successfullyExtended = extend(container, eObject, containingEReference);
-				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+				toExtendEdges.add(List.of(container, eObject, containingEReference));
 			}
 			
+		}
+		
+		for (EObject eObject : toExtendNodes) {
+			if (!contains(eObject)) {
+				boolean successfullyExtended = extend(eObject);
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
+		}
+		
+		for (List<EObject> list : toExtendEdges) {
+			if (!contains(list.get(0), list.get(1), (EReference) list.get(2), false)) {
+				boolean successfullyExtended = extend(list.get(0), list.get(1), (EReference) list.get(2));
+				if (!successfullyExtended) throw new IllegalStateException("Couldn't extend the searchSpaceElementTwo view by an eObject.");
+			}
 		}
 		
 	}
