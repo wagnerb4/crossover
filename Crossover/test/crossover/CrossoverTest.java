@@ -21,9 +21,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -39,7 +42,11 @@ import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
+import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import view.TestResources;
 import view.View;
@@ -1363,6 +1370,63 @@ class CrossoverTest extends TestResources {
 			}
 			
 		}
+		
+	}
+
+	/**
+	 * 
+	 * @param resourceOne
+	 * @param resourceTwo
+	 */
+	@ParameterizedTest
+	@CsvSource(value = {"CRAInstanceOne:CRAInstanceTwo"}, delimiter = ':')
+	final void testCrossoverWithStandardOptionsOnCRAMetaModel(String resourceOne, String resourceTwo) {
+		
+		String resourcePath = "test/resources/";
+		SimpleCrossover sc = new SimpleCrossover(resourcePath);
+		ExecutorService es = Executors.newSingleThreadExecutor();
+		
+		sc.defineMetamodel(
+				"CRA", 
+				List.of(resourceOne, resourceTwo), 
+				List.of(
+						Pair.of("ClassModel", List.of("features")),
+						Pair.of("Attribute", List.of()), 
+						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
+				), SimpleCrossover.createNonRandomProblemSplitStrategy(0.5)
+		);
+		
+		try {
+			sc.addCrossover(resourceOne, resourceTwo);
+		} catch (CrossoverUsageException | ViewSetOperationException e) {
+			e.printStackTrace();
+		}
+		
+		HenshinResourceSet resourceSet = new HenshinResourceSet(resourcePath);
+		
+		sc.setWhenDone((pairOfResources, identifierPair) -> {
+			
+			String name = identifierPair.getFirst();
+			int crossoverNumber = identifierPair.getSecond();
+			
+			View firstView = new View(pairOfResources.getFirst());
+			firstView.extendByAllNodes();
+			firstView.extendByMissingEdges();
+			
+			View secondView = new View(pairOfResources.getSecond());
+			secondView.extendByAllNodes();
+			secondView.extendByMissingEdges();
+			
+			Resource expectedFirst = resourceSet.getResource(name + "No" + crossoverNumber + "First.xmi");
+			Resource expectedSecond = resourceSet.getResource(name + "No" + crossoverNumber + "Second.xmi");
+			
+			assertExistsOnlyOneBijection(expectedFirst, firstView);
+			assertExistsOnlyOneBijection(expectedSecond, secondView);
+			
+			
+		});
+		
+		es.execute(sc);
 		
 	}
 	

@@ -2,12 +2,14 @@ package crossover;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
@@ -67,10 +69,22 @@ public class SimpleCrossover implements Runnable {
 	private final List<String> crossoverNames;
 	private final File outputDirectory;
 	
+	private BiConsumer<Pair<Resource, Resource>, Pair<String, Integer>> whenDone;
+	
+	/**
+	 * Creates a new instance of the {@link SimpleCrossover} class.
+	 * @param resourceDirectoryPath the path to the directory to non-recursively scan for resources to use in the crossovers 
+	 * and write the computed crossover pairs to (if no different behaviour is specified by the {@link SimpleCrossover#setWhenDone(BiConsumer) whenDone-function})
+	 */
+	public SimpleCrossover(String resourceDirectoryPath) {
+		this(resourceDirectoryPath, resourceDirectoryPath);
+	}
+	
 	/**
 	 * Creates a new instance of the {@link SimpleCrossover} class.
 	 * @param resourceInputDirectoryPath the path to the directory to non-recursively scan for resources to use in the crossovers
 	 * @param resourceOutputDirectoryPath the path to the directory to write the computed crossover pairs to
+	 * (if no different behaviour is specified by the {@link SimpleCrossover#setWhenDone(BiConsumer) whenDone-function})
 	 */
 	public SimpleCrossover (String resourceInputDirectoryPath, String resourceOutputDirectoryPath) {
 		
@@ -83,6 +97,13 @@ public class SimpleCrossover implements Runnable {
 		this.inputResourceSet =  new HenshinResourceSet(resourceInputDirectoryPath);
 		this.outputResourceSet = new HenshinResourceSet(resourceOutputDirectoryPath);
 		
+		
+		this.whenDone = (pairOfResources, identifierPair) -> {
+			String name = identifierPair.getFirst();
+			int crossoverNumber = identifierPair.getSecond();
+			outputResourceSet.saveEObject(pairOfResources.getFirst().getContents().get(0), name + "No" + crossoverNumber + "First.xmi");
+			outputResourceSet.saveEObject(pairOfResources.getSecond().getContents().get(0), name + "No" + crossoverNumber + "Second.xmi");
+		};
 		
 		this.loadedResources = new HashMap<>();
 		this.crossovers = new ArrayList<>();
@@ -107,8 +128,10 @@ public class SimpleCrossover implements Runnable {
 	}
 
 	/**
-	 * Creates a unique name of the crossover of the two given resource names
-	 * and adds it to the {@link SimpleCrossover#crossoverNames}. 
+	 * Creates a unique name for the crossover of the two given resource names
+	 * and adds it to the {@link SimpleCrossover#crossoverNames}.
+	 * The name consists of "resourceOneNameXresourceTwoName" if it is already unique and otherwise
+	 * "resourceOneNameXresourceTwoNameVerN" where N ist the smalest number greater than or equals to one such that the name is unique.
 	 * @param resourceOneName the name (as in the {@link SimpleCrossover#loadedResources} map) of the first resource used for the crossover
 	 * @param resourceTwoName the name (as in the {@link SimpleCrossover#loadedResources} map) of the second resource used for the crossover
 	 */
@@ -130,7 +153,19 @@ public class SimpleCrossover implements Runnable {
 		crossoverNames.add(crossoverName);
 		
 	}
-	
+		
+	/**
+	 * Set the whenDone function that is executed for each produced crossover pair.
+	 * The first parameter of the function is the pair of resources produced by the crossover and the
+	 * second parameter is a String-Integer-Pair that uniquely identifies the crossover-pair. 
+	 * It consists of the {@link SimpleCrossover#createCrossoverName(String, String) crossover's name} and 
+	 * the counter of the produced pair.
+	 * @param whenDone the whenDone to set
+	 */
+	public void setWhenDone(BiConsumer<Pair<Resource, Resource>, Pair<String, Integer>> whenDone) {
+		this.whenDone = whenDone;
+	}
+
 	/**
 	 * Defines the resource by the given name as a metamodel.
 	 * @param metamodelResourceName the name of the resource as in the {@link SimpleCrossover#loadedResources} map
@@ -292,13 +327,10 @@ public class SimpleCrossover implements Runnable {
 				crossoverNumber++;
 				
 				Pair<Resource, Resource> pair = (Pair<Resource, Resource>) crossoverResourcePairIterator.next();
-				String pathWithEndSeparator = FilenameUtils.getFullPath(this.outputDirectory.getAbsolutePath());
-				
 				if (pair.getFirst().getContents().size() != 1) throw new IllegalStateException("There is more or less then one root element in: " + name + "No" + crossoverNumber + "First");
 				if (pair.getSecond().getContents().size() != 1) throw new IllegalStateException("There is more or less then one root element in: " + name + "No" + crossoverNumber + "Second");
-				
-				this.outputResourceSet.saveEObject(pair.getFirst().getContents().get(0), pathWithEndSeparator + name + "No" + crossoverNumber + "First.xmi");
-				this.outputResourceSet.saveEObject(pair.getSecond().getContents().get(0), pathWithEndSeparator + name + "No" + crossoverNumber + "Second.xmi");
+				whenDone.accept(pair, Pair.of(name, crossoverNumber));
+
 			}
 		}
 		
@@ -331,20 +363,42 @@ public class SimpleCrossover implements Runnable {
 	}
 	
 	/**
+	 * @param percent the percent of nodes to remove, 0 < percent < 1
+	 * @return the created strategy
+	 */
+	public static Strategy createNonRandomProblemSplitStrategy (double percent) {
+		
+		if (percent <= 0 || percent >= 1) throw new IllegalArgumentException("percent was not a number in the interval of (0, 1)");
+		
+		return (view) -> {
+			
+			Collection<EObject> eObjects = view.getContainedEObjects();
+			
+			
+			int amountOfNodes = eObjects.size();
+			int toRemove = (int) percent * amountOfNodes;
+			
+			EObject[] arrayOfEObjects = eObjects.toArray(new EObject[0]);
+			
+			for (int i = 0; i < amountOfNodes; i++) {
+				
+				view.reduce(arrayOfEObjects[i]);
+				if (i > toRemove) break;
+				
+			}
+			
+			view.removeDangling();
+			
+		};
+	}
+	
+	/**
 	 * Runner of the Class with a simple example.
 	 * @param args the first argument of this array will be used as the output directory for the crossover pairs
 	 */
 	public static void main(String[] args) {
 		
-		String outputDirectory;
-		
-		if (args.length == 1) {
-			outputDirectory = args[0];
-		} else {
-			outputDirectory = "test/resources/";
-		}
-		
-		SimpleCrossover sc = new SimpleCrossover("test/resources", outputDirectory);
+		SimpleCrossover sc = new SimpleCrossover("test/resources/");
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		
 		sc.defineMetamodel(
