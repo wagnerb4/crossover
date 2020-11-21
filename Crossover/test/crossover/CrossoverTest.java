@@ -26,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FilenameUtils;
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
@@ -43,10 +42,10 @@ import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
 import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import view.TestResources;
 import view.View;
@@ -1374,15 +1373,17 @@ class CrossoverTest extends TestResources {
 	}
 
 	/**
-	 * 
 	 * @param resourceOne
 	 * @param resourceTwo
 	 */
+	@Ignore
 	@ParameterizedTest
 	@CsvSource(value = {"CRAInstanceOne:CRAInstanceTwo"}, delimiter = ':')
 	final void testCrossoverWithStandardOptionsOnCRAMetaModel(String resourceOne, String resourceTwo) {
 		
 		String resourcePath = "test/resources/";
+		String expectedCrossoversPath = "test/expectedCrossovers/";
+		
 		SimpleCrossover sc = new SimpleCrossover(resourcePath);
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		
@@ -1393,16 +1394,16 @@ class CrossoverTest extends TestResources {
 						Pair.of("ClassModel", List.of("features")),
 						Pair.of("Attribute", List.of()), 
 						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
-				), SimpleCrossover.createNonRandomProblemSplitStrategy(0.5)
+				)
 		);
 		
 		try {
-			sc.addCrossover(resourceOne, resourceTwo);
+			sc.addCrossover(resourceOne, resourceTwo, SimpleCrossover.createNonRandomProblemSplitStrategy(0.5));
 		} catch (CrossoverUsageException | ViewSetOperationException e) {
 			e.printStackTrace();
 		}
 		
-		HenshinResourceSet resourceSet = new HenshinResourceSet(resourcePath);
+		HenshinResourceSet resourceSet = new HenshinResourceSet(expectedCrossoversPath);
 		
 		sc.setWhenDone((pairOfResources, identifierPair) -> {
 			

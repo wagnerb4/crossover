@@ -61,7 +61,7 @@ class MappingUtilTest extends TestResources {
 	 */
 	@BeforeAll
 	static void setUpGetMappingSetIteratorTestInstances() throws Exception {
-		HenshinResourceSet resourceSet = new HenshinResourceSet(RESOURCE_PATH);
+		HenshinResourceSet resourceSet = new HenshinResourceSet("test/mappingSetIteratorTestResources");
 		GET_MAPPING_SET_ITERATOR_TEST_CRA_ECORE = resourceSet.getResource("CRA.ecore");
 		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_FI = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_FI.xmi");
 		GET_MAPPING_SET_ITERATOR_TEST_1_CRA_INSTANCE_I = resourceSet.getResource("GetMappingSetIteratorTest_1_CRAInstance_I.xmi");

@@ -3,6 +3,7 @@ package crossover;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
 
+import view.View;
 import view.ViewSetOperationException;
 
 /**
@@ -58,12 +60,6 @@ public class SimpleCrossover implements Runnable {
 	 * A map saving the {@link EReference eReferences} of the problem part in the meta-model with the respective resource name.
 	 */
 	private final Map<String, List<EReference>> metamodelProblemPartEReferences;
-	
-	/**
-	 * A map that hold the default {@link Strategy strategies} used for splitting up the problem part for each meta-model.
-	 * The default values are used in {@link SimpleCrossover#addCrossover(String, String)} and {@link SimpleCrossover#addCrossover(String, String, SearchSpaceElementSplitStrategy)}.
-	 */
-	private final Map<String, Strategy> metamodelProblemPartSplitStrategies;
 	
 	private final List<Crossover> crossovers;
 	private final List<String> crossoverNames;
@@ -111,7 +107,6 @@ public class SimpleCrossover implements Runnable {
 		this.resourceMetamodels = new HashMap<>();
 		this.metamodelProblemPartEClasses = new HashMap<>();
 		this.metamodelProblemPartEReferences = new HashMap<>();
-		this.metamodelProblemPartSplitStrategies = new HashMap<>();
 		
 		File[] contentsOfDirectory = inputDirectory.listFiles(file -> {
 			if (!file.isFile()) return false;
@@ -174,20 +169,15 @@ public class SimpleCrossover implements Runnable {
 	 * that belong to the problem part of this meta-model <br/> <hr/>
 	 * Earch entry of the list contains the name of an {@link EClass eClass} and a list with the names
 	 * of the {@link EReference eReferences} of that {@link EClass eClass} wich also belong to the problem part. <hr/><br/>
-	 * @param defaultProblemPartSplitStrategy the default {@link Strategy strategy} used for splitting up the problem part <br/> <hr/>
-	 * The default values are used in {@link SimpleCrossover#addCrossover(String, String)} and 
-	 * {@link SimpleCrossover#addCrossover(String, String, SearchSpaceElementSplitStrategy)}. <hr/><br/>
 	 */
 	public void defineMetamodel (
 			String metamodelResourceName, 
 			List<String> modelResourceNames,
-			List<Pair<String, List<String>>> problemPartElementNames,
-			Strategy defaultProblemPartSplitStrategy) {
+			List<Pair<String, List<String>>> problemPartElementNames) {
 		
 		if (!loadedResources.containsKey(metamodelResourceName)) throw new IllegalArgumentException("Found no loaded resource by that name.");
 		
 		modelResourceNames.forEach(string -> resourceMetamodels.put(string, metamodelResourceName));
-		metamodelProblemPartSplitStrategies.put(metamodelResourceName, defaultProblemPartSplitStrategy);
 		
 		List<EClass> problemPartEClasses = new ArrayList<>();
 		List<EReference> problemPartEReferences = new ArrayList<>();
@@ -220,47 +210,28 @@ public class SimpleCrossover implements Runnable {
 		metamodelProblemPartEReferences.put(metamodelResourceName, problemPartEReferences);
 	}
 	
+	// without subMetaModelOfIntersection
+	
 	/**
-	 * Adds a new crossover.
+	 * Adds a new crossover. Uses the {@link Crossover#DEFAULT_STRATEGY default search space element split strategy} and the
+	 * {@link SimpleCrossover#createRandomProblemSplitStrategy(double) default problem part split strategy} with a value of 0.8.
 	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
 	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
 	 */
-	public void addCrossover (String resourceOneName, String resourceTwoName) throws CrossoverUsageException, ViewSetOperationException {
-		
-		if (!loadedResources.containsKey(resourceOneName) || !loadedResources.containsKey(resourceTwoName)) throw new IllegalArgumentException("Unloaded resources given."); 
-		if (!resourceMetamodels.containsKey(resourceOneName) || !resourceMetamodels.containsKey(resourceTwoName)) throw new IllegalArgumentException("Metamodel resources given."); 
-		if (resourceMetamodels.get(resourceOneName) == null || resourceMetamodels.get(resourceTwoName) == null) throw new IllegalArgumentException("Resources with undefined metamodels given."); 
-		if (!resourceMetamodels.get(resourceOneName).equals(resourceMetamodels.get(resourceTwoName))) throw new IllegalArgumentException("Resources with different metamodels given."); 
-		
-		String resourceMetamodelName = resourceMetamodels.get(resourceOneName);
-		
-		if (!metamodelProblemPartSplitStrategies.containsKey(resourceMetamodelName)) throw new IllegalStateException("No default problemPartSplitStrategy defined for the metamodel of the given references.");
-		Strategy problemPartSplitStrategy = metamodelProblemPartSplitStrategies.get(resourceMetamodelName);
-		
-		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, Crossover.DEFAULT_STRATEGY);
-		
+	@SuppressWarnings("unchecked")
+	public void addCrossover (String resourceOneName, String resourceTwoName) throws CrossoverUsageException, ViewSetOperationException {		
+		addCrossover (resourceOneName, resourceTwoName, Collections.EMPTY_LIST);
 	}
 	
 	/**
-	 * Adds a new crossover.
+	 * Adds a new crossover. Uses the {@link SimpleCrossover#createRandomProblemSplitStrategy(double) default problem part split strategy} with a value of 0.8.
 	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
 	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
 	 * @param searchSpaceElementSplitStrategy the {@link SearchSpaceElementSplitStrategy} used for the crossover
 	 */
+	@SuppressWarnings("unchecked")
 	public void addCrossover (String resourceOneName, String resourceTwoName, SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy) throws CrossoverUsageException, ViewSetOperationException {
-		
-		if (!loadedResources.containsKey(resourceOneName) || !loadedResources.containsKey(resourceTwoName)) throw new IllegalArgumentException("Unloaded resources given."); 
-		if (!resourceMetamodels.containsKey(resourceOneName) || !resourceMetamodels.containsKey(resourceTwoName)) throw new IllegalArgumentException("Metamodel resources given."); 
-		if (resourceMetamodels.get(resourceOneName) == null || resourceMetamodels.get(resourceTwoName) == null) throw new IllegalArgumentException("Resources with undefined metamodels given."); 
-		if (!resourceMetamodels.get(resourceOneName).equals(resourceMetamodels.get(resourceTwoName))) throw new IllegalArgumentException("Resources with different metamodels given."); 
-		
-		String resourceMetamodelName = resourceMetamodels.get(resourceOneName);
-		
-		if (!metamodelProblemPartSplitStrategies.containsKey(resourceMetamodelName)) throw new IllegalStateException("No default problemPartSplitStrategy defined for the metamodel of the given references.");
-		Strategy problemPartSplitStrategy = metamodelProblemPartSplitStrategies.get(resourceMetamodelName);
-		
-		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, searchSpaceElementSplitStrategy);
-		
+		addCrossover (resourceOneName, resourceTwoName, searchSpaceElementSplitStrategy, Collections.EMPTY_LIST);
 	}
 	
 	/**
@@ -270,8 +241,9 @@ public class SimpleCrossover implements Runnable {
 	 * @param problemPartSplitStrategy the {@link Stragtegy} used for splitting up the problem part for the crossover
 	 * @see Crossover#splitProblemPart
 	 */
+	@SuppressWarnings("unchecked")
 	public void addCrossover (String resourceOneName, String resourceTwoName, Strategy problemPartSplitStrategy) throws CrossoverUsageException, ViewSetOperationException {
-		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, Crossover.DEFAULT_STRATEGY);
+		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, Collections.EMPTY_LIST);
 	}
 	
 	/**
@@ -282,7 +254,83 @@ public class SimpleCrossover implements Runnable {
 	 * @param searchSpaceElementSplitStrategy the {@link SearchSpaceElementSplitStrategy} used for the crossover
 	 * @see Crossover#splitProblemPart
 	 */
+	@SuppressWarnings("unchecked")
 	public void addCrossover (String resourceOneName, String resourceTwoName, Strategy problemPartSplitStrategy, SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy) throws CrossoverUsageException, ViewSetOperationException {
+		addCrossover(resourceOneName, resourceTwoName, problemPartSplitStrategy, searchSpaceElementSplitStrategy, Collections.EMPTY_LIST);
+	}
+	
+	// with subMetaModelOfIntersection
+	
+	/**
+	 * Adds a new crossover. Uses the {@link Crossover#DEFAULT_STRATEGY default search space element split strategy} and the
+	 * {@link SimpleCrossover#createRandomProblemSplitStrategy(double) default problem part split strategy} with a value of 0.8.
+	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
+	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
+	 * @param subMetaModelOfIntersectionNames part of the meta-model of the resources to specify the intersections <br/> <hr/>
+	 * Earch entry of the list contains the name of an {@link EClass eClass} and a list with the names
+	 * of the {@link EReference eReferences} of that {@link EClass eClass} wich also belong to the problem part. <hr/><br/>
+	 */
+	public void addCrossover (String resourceOneName, String resourceTwoName, List<Pair<String, List<String>>> subMetaModelOfIntersectionNames) throws CrossoverUsageException, ViewSetOperationException {
+		
+		if (!loadedResources.containsKey(resourceOneName) || !loadedResources.containsKey(resourceTwoName)) throw new IllegalArgumentException("Unloaded resources given."); 
+		if (!resourceMetamodels.containsKey(resourceOneName) || !resourceMetamodels.containsKey(resourceTwoName)) throw new IllegalArgumentException("Metamodel resources given."); 
+		if (resourceMetamodels.get(resourceOneName) == null || resourceMetamodels.get(resourceTwoName) == null) throw new IllegalArgumentException("Resources with undefined metamodels given."); 
+		if (!resourceMetamodels.get(resourceOneName).equals(resourceMetamodels.get(resourceTwoName))) throw new IllegalArgumentException("Resources with different metamodels given."); 
+		
+		Strategy problemPartSplitStrategy = SimpleCrossover.createRandomProblemSplitStrategy(0.8);
+		
+		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, Crossover.DEFAULT_STRATEGY, subMetaModelOfIntersectionNames);
+		
+	}
+	
+	/**
+	 * Adds a new crossover. Uses the {@link SimpleCrossover#createRandomProblemSplitStrategy(double) default problem part split strategy} with a value of 0.8.
+	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
+	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
+	 * @param searchSpaceElementSplitStrategy the {@link SearchSpaceElementSplitStrategy} used for the crossover
+	 * @param subMetaModelOfIntersectionNames part of the meta-model of the resources to specify the intersections <br/> <hr/>
+	 * Earch entry of the list contains the name of an {@link EClass eClass} and a list with the names
+	 * of the {@link EReference eReferences} of that {@link EClass eClass} wich also belong to the problem part. <hr/><br/>
+	 */
+	public void addCrossover (String resourceOneName, String resourceTwoName, SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy, List<Pair<String, List<String>>> subMetaModelOfIntersectionNames) throws CrossoverUsageException, ViewSetOperationException {
+		
+		if (!loadedResources.containsKey(resourceOneName) || !loadedResources.containsKey(resourceTwoName)) throw new IllegalArgumentException("Unloaded resources given."); 
+		if (!resourceMetamodels.containsKey(resourceOneName) || !resourceMetamodels.containsKey(resourceTwoName)) throw new IllegalArgumentException("Metamodel resources given."); 
+		if (resourceMetamodels.get(resourceOneName) == null || resourceMetamodels.get(resourceTwoName) == null) throw new IllegalArgumentException("Resources with undefined metamodels given."); 
+		if (!resourceMetamodels.get(resourceOneName).equals(resourceMetamodels.get(resourceTwoName))) throw new IllegalArgumentException("Resources with different metamodels given."); 
+		
+		Strategy problemPartSplitStrategy = SimpleCrossover.createRandomProblemSplitStrategy(0.8);
+		
+		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, searchSpaceElementSplitStrategy, subMetaModelOfIntersectionNames);
+		
+	}
+	
+	/**
+	 * Adds a new crossover.
+	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
+	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
+	 * @param problemPartSplitStrategy the {@link Stragtegy} used for splitting up the problem part for the crossover
+	 * @param subMetaModelOfIntersectionNames part of the meta-model of the resources to specify the intersections <br/> <hr/>
+	 * Earch entry of the list contains the name of an {@link EClass eClass} and a list with the names
+	 * of the {@link EReference eReferences} of that {@link EClass eClass} wich also belong to the problem part. <hr/><br/>
+	 * @see Crossover#splitProblemPart
+	 */
+	public void addCrossover (String resourceOneName, String resourceTwoName, Strategy problemPartSplitStrategy, List<Pair<String, List<String>>> subMetaModelOfIntersectionNames) throws CrossoverUsageException, ViewSetOperationException {
+		addCrossover (resourceOneName, resourceTwoName, problemPartSplitStrategy, Crossover.DEFAULT_STRATEGY, subMetaModelOfIntersectionNames);
+	}
+	
+	/**
+	 * Adds a new crossover.
+	 * @param resourceOneName the name of the resource to be used as the first search space element for the crossover
+	 * @param resourceTwoName the name of the resource to be used as the second search space element for the crossover
+	 * @param problemPartSplitStrategy the {@link Stragtegy} used for splitting up the problem part for the crossover
+	 * @param searchSpaceElementSplitStrategy the {@link SearchSpaceElementSplitStrategy} used for the crossover
+	 * @param subMetaModelOfIntersectionNames part of the meta-model of the resources to specify the intersections <br/> <hr/>
+	 * Earch entry of the list contains the name of an {@link EClass eClass} and a list with the names
+	 * of the {@link EReference eReferences} of that {@link EClass eClass} wich also belong to the problem part. <hr/><br/>
+	 * @see Crossover#splitProblemPart
+	 */
+	public void addCrossover (String resourceOneName, String resourceTwoName, Strategy problemPartSplitStrategy, SearchSpaceElementSplitStrategy searchSpaceElementSplitStrategy, List<Pair<String, List<String>>> subMetaModelOfIntersectionNames) throws CrossoverUsageException, ViewSetOperationException {
 		
 		if (!loadedResources.containsKey(resourceOneName) || !loadedResources.containsKey(resourceTwoName)) throw new IllegalArgumentException("Unloaded resources given."); 
 		if (!resourceMetamodels.containsKey(resourceOneName) || !resourceMetamodels.containsKey(resourceTwoName)) throw new IllegalArgumentException("Metamodel resources given."); 
@@ -296,10 +344,40 @@ public class SimpleCrossover implements Runnable {
 		String resourceMetamodelName = resourceMetamodels.get(resourceOneName);
 		Resource metamodel = loadedResources.get(resourceMetamodelName);
 		
+		View subMetaModelOfIntersection = new View(metamodel);
+		
+		if (!subMetaModelOfIntersectionNames.isEmpty()) {
+			
+			TreeIterator<EObject> treeIterator = metamodel.getAllContents();
+			
+			while (treeIterator.hasNext()) {
+				EObject eObject = (EObject) treeIterator.next();
+				
+				if (eObject instanceof EClass) {
+					EClass eClass = (EClass) eObject;
+					
+					for (Pair<String, List<String>> pair : subMetaModelOfIntersectionNames) {
+						if (eClass.getName().equals(pair.getFirst())) {
+							subMetaModelOfIntersection.extend(eObject);
+							for (String eReferenceName : pair.getSecond()) {
+								List<EReference> eReferences = eClass.getEAllReferences().stream().
+										filter(eReference -> eReference.getName().equals(eReferenceName)).
+										collect(Collectors.toList());
+								if (eReferences.size() != 1) throw new IllegalArgumentException("The eClass " + pair.getFirst() + 
+										" does not have an eReference by the name of " + eReferenceName);
+								subMetaModelOfIntersection.extend(((EObject) eReferences.get(0)));
+							}
+						}
+					}
+				}
+			}
+			
+		}
+		
 		List<EClass> problemPartEClasses = metamodelProblemPartEClasses.get(resourceMetamodelName);
 		List<EReference> problemPartEReferences = metamodelProblemPartEReferences.get(resourceMetamodelName);
 		
-		Crossover crossover = new Crossover(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy);
+		Crossover crossover = new Crossover(metamodel, searchSpaceElements, problemPartSplitStrategy, problemPartEClasses, problemPartEReferences, searchSpaceElementSplitStrategy, subMetaModelOfIntersection);
 		
 		if (!crossovers.contains(crossover)) {
 			crossovers.add(crossover);
@@ -408,7 +486,7 @@ public class SimpleCrossover implements Runnable {
 						Pair.of("ClassModel", List.of("features")),
 						Pair.of("Attribute", List.of()), 
 						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
-				), SimpleCrossover.createRandomProblemSplitStrategy(0.8)
+				)
 		);
 		
 		try {
