@@ -489,8 +489,63 @@ public class SimpleCrossover implements Runnable {
 				)
 		);
 		
+		// get meta-model elements
+		
+		Resource cra = sc.loadedResources.get("CRA");
+		
+		EClass attributeEClass = null;
+		EClass classModelEClass = null;
+		EReference classesEReference = null;
+		
+		Iterator<EObject> iterator = cra.getAllContents();
+		while (iterator.hasNext()) {
+			EObject eObject = (EObject) iterator.next();
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				if(eClass.getName().equals("Attribute")) {
+					attributeEClass = eClass;
+				} else if (eClass.getName().equals("ClassModel")) {
+					classModelEClass = eClass;
+				}
+			}
+			
+		}
+		
+		for (EReference eReference : classModelEClass.getEAllReferences()) {
+			if (eReference.getName().equals("classes")) {
+				classesEReference = eReference;
+			}
+		}
+		
+		final EClass finalAttributeEClass = attributeEClass;
+		final EReference finalClassesEReference = classesEReference;
+		
+		
+		Strategy pps = (View view) -> {
+			view.reduce(finalAttributeEClass);
+		};
+		
+		SearchSpaceElementSplitStrategy sss = new SearchSpaceElementSplitStrategy() {
+			@Override
+			public void apply(View sseOne) throws ViewSetOperationException, IllegalStateException {
+				
+				View changedSSEOne = sseOne.copy();
+				
+				changedSSEOne.reduce(finalClassesEReference);
+				
+				Crossover.DEFAULT_STRATEGY.setProblemSplitPart(super.problemSplitPart);
+				Crossover.DEFAULT_STRATEGY.apply(changedSSEOne);
+				
+				sseOne.clear();
+				sseOne.union(changedSSEOne);
+				sseOne.extend(finalClassesEReference);
+				sseOne.removeDangling();
+				
+			}
+		};
+		
 		try {
-			sc.addCrossover("CRAInstanceOne", "CRAInstanceTwo");
+			sc.addCrossover("CRAInstanceOne", "CRAInstanceTwo", pps, sss, List.of(Pair.of("Class", List.of())));
 		} catch (CrossoverUsageException | ViewSetOperationException e) {
 			e.printStackTrace();
 		}
