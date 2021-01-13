@@ -3,7 +3,7 @@
   realizations="true" associations="true" dependencies="false" nesting-relationships="true" router="FAN">  
   <class id="1" language="java" name="crossover.SimpleCrossover" project="Crossover" 
     file="/Crossover/src/crossover/SimpleCrossover.java" binary="false" corner="BOTTOM_RIGHT">    
-    <position height="565" width="540" x="62" y="-23"/>    
+    <position height="-1" width="-1" x="413" y="237"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="true" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
       <attributes public="true" package="true" protected="true" private="false" static="true"/>      

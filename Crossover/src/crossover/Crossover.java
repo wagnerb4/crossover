@@ -370,7 +370,7 @@ public class Crossover implements Iterable<Pair<Resource, Resource>> {
 	 * Calculates the border of the given problem part, specified by the 
 	 * {@link EClass problemPartEClasses} and {@link EReference problemPartEReferences}
 	 * in the {@link Resource metamodel} adjacent to the solution part. The solution part
-	 * consits of all elements that are not part of the problem part.
+	 * consists of all elements that are not part of the problem part.
 	 * @param metamodel the meta-model containing problem- and solution part
 	 * @param problemPartEClasses a {@link List list} of {@link EClass eClasses} describing the problem part
 	 * @param problemPartEReferences a {@link List list} of {@link EReference eReferences} describing the problem part

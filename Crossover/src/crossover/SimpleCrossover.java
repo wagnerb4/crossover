@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.emf.common.util.TreeIterator;
+import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
@@ -415,6 +416,14 @@ public class SimpleCrossover implements Runnable {
 	}
 	
 	/**
+	 * @param name the filename of a resource in the resource input directory
+	 * @return the resource with the given filename as used by the crossover
+	 */
+	public Resource getLoadedResource(String name) {
+		return loadedResources.get(name);
+	}
+	
+	/**
 	 * @param chance the chance to stop removing nodes from the view (each time) after half of the nodes have been removed
 	 * @return Returns a {@link Strategy} that removes random nodes from the view and all dangling edges.
 	 */
@@ -475,7 +484,116 @@ public class SimpleCrossover implements Runnable {
 	 * @param args the first argument of this array will be used as the output directory for the crossover pairs
 	 */
 	public static void main(String[] args) {
+		expl_one();
+	}
+	
+	public static void expl_two() {
+		SimpleCrossover sc = new SimpleCrossover("test/resources/");
+		ExecutorService es = Executors.newSingleThreadExecutor();
 		
+		sc.defineMetamodel(
+				"CRA", 
+				List.of("CRA_Pres_One", "CRA_Pres_Two"), 
+				List.of(
+						Pair.of("ClassModel", List.of("features")),
+						Pair.of("Feature", List.of()),
+						Pair.of("Attribute", List.of()), 
+						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
+				)
+		);
+		
+		// get meta-model elements
+		
+		Resource cra = sc.loadedResources.get("CRA");
+		
+		EClass namedElementEClass = null;
+		EAttribute name = null;
+		EClass classModelEClass = null;
+		EReference classesEReference = null;
+		
+		Iterator<EObject> iterator = cra.getAllContents();
+		while (iterator.hasNext()) {
+			EObject eObject = (EObject) iterator.next();
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				if(eClass.getName().equals("NamedElement")) {
+					namedElementEClass = eClass;
+				} else if (eClass.getName().equals("ClassModel")) {
+					classModelEClass = eClass;
+				}
+			}	
+		}
+		
+		for (EAttribute eAttribute : namedElementEClass.getEAttributes()) {
+			if (eAttribute.getName().equals("name")) {
+				name = eAttribute;
+			}
+		}
+		
+		
+		for (EReference eReference : classModelEClass.getEAllReferences()) {
+			if (eReference.getName().equals("classes")) {
+				classesEReference = eReference;
+			}
+		}
+		
+		final EAttribute finalName = name;
+		
+		Strategy pps = (View view) -> {
+			
+			List<EObject> toRemove = new ArrayList<>();
+			
+			for (EObject eObject : view.getContainedEObjects()) {
+				
+				String nameString = (String) eObject.eGet(finalName);
+				
+				switch (nameString) {
+					case "4":
+					case "6":
+						toRemove.add(eObject);
+						break;
+	
+					default:
+						break;
+				}
+				
+			}
+			
+			toRemove.forEach(view::reduce);
+
+		};
+		
+		final EReference finalClassesEReference = classesEReference;
+		
+		SearchSpaceElementSplitStrategy sss = new SearchSpaceElementSplitStrategy() {
+			@Override
+			public void apply(View sseOne) throws ViewSetOperationException, IllegalStateException {
+				
+				View changedSSEOne = sseOne.copy();
+				
+				changedSSEOne.reduce(finalClassesEReference);
+				
+				Crossover.DEFAULT_STRATEGY.setProblemSplitPart(super.problemSplitPart);
+				Crossover.DEFAULT_STRATEGY.apply(changedSSEOne);
+				
+				sseOne.clear();
+				sseOne.union(changedSSEOne);
+				sseOne.extend(finalClassesEReference);
+				sseOne.removeDangling();
+				
+			}
+		};
+		
+		try {
+			sc.addCrossover("CRA_Pres_One", "CRA_Pres_Two", pps, sss);
+		} catch (CrossoverUsageException | ViewSetOperationException e) {
+			e.printStackTrace();
+		}
+		
+		es.execute(sc);
+	}
+	
+	public static void expl_one() {
 		SimpleCrossover sc = new SimpleCrossover("test/resources/");
 		ExecutorService es = Executors.newSingleThreadExecutor();
 		
@@ -484,6 +602,7 @@ public class SimpleCrossover implements Runnable {
 				List.of("CRAInstanceOne", "CRAInstanceTwo"), 
 				List.of(
 						Pair.of("ClassModel", List.of("features")),
+						Pair.of("Feature", List.of()),
 						Pair.of("Attribute", List.of()), 
 						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
 				)
@@ -525,6 +644,8 @@ public class SimpleCrossover implements Runnable {
 			view.reduce(finalAttributeEClass);
 		};
 		
+		// pps = SimpleCrossover.createRandomProblemSplitStrategy(0.8);
+		
 		SearchSpaceElementSplitStrategy sss = new SearchSpaceElementSplitStrategy() {
 			@Override
 			public void apply(View sseOne) throws ViewSetOperationException, IllegalStateException {
@@ -551,7 +672,6 @@ public class SimpleCrossover implements Runnable {
 		}
 		
 		es.execute(sc);
-		
 	}
 
 }

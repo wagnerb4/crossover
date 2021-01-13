@@ -21,8 +21,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,8 +39,6 @@ import org.eclipse.emf.henshin.model.Node;
 import org.eclipse.emf.henshin.model.Rule;
 import org.eclipse.emf.henshin.model.impl.MappingImpl;
 import org.eclipse.emf.henshin.model.impl.RuleImpl;
-import org.eclipse.emf.henshin.model.resource.HenshinResourceSet;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -1073,37 +1069,30 @@ class CrossoverTest extends TestResources {
 		
 		for (int i = 0; i < 5; i++) {
 			
-			View firstView = new View(foundCrossoverPairs.get(i).getFirst());
-			firstView.extendByAllNodes();
-			firstView.extendByMissingEdges();
-			View secondView = new View(foundCrossoverPairs.get(i).getSecond());
-			secondView.extendByAllNodes();
-			secondView.extendByMissingEdges();
-			
 			switch (i + 1) {
 				case 1:
-					assertExistsOnlyOneBijection(CRACrossoverTest3_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest3_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest3_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest3_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 2:
-					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 3:
-					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 4:
-					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 5:
-					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 			}
 			
@@ -1334,37 +1323,30 @@ class CrossoverTest extends TestResources {
 		
 		for (int i = 0; i < 5; i++) {
 			
-			View firstView = new View(foundCrossoverPairs.get(i).getFirst());
-			firstView.extendByAllNodes();
-			firstView.extendByMissingEdges();
-			View secondView = new View(foundCrossoverPairs.get(i).getSecond());
-			secondView.extendByAllNodes();
-			secondView.extendByMissingEdges();
-			
 			switch (i + 1) {
 				case 1:
-					assertExistsOnlyOneBijection(CRACrossoverTest3_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest3_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest3_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest3_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 2:
-					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 3:
-					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 4:
-					assertExistsOnlyOneBijection(CRACrossoverTest2_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest2_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest2_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest2_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 				
 				case 5:
-					assertExistsOnlyOneBijection(CRACrossoverTest1_1, firstView);
-					assertExistsOnlyOneBijection(CRACrossoverTest1_2, secondView);
+					assertExistsOnlyOneBijection(CRACrossoverTest1_1, foundCrossoverPairs.get(i).getFirst());
+					assertExistsOnlyOneBijection(CRACrossoverTest1_2, foundCrossoverPairs.get(i).getSecond());
 				break;
 			}
 			
@@ -1376,16 +1358,13 @@ class CrossoverTest extends TestResources {
 	 * @param resourceOne
 	 * @param resourceTwo
 	 */
-	@Ignore
 	@ParameterizedTest
 	@CsvSource(value = {"CRAInstanceOne:CRAInstanceTwo"}, delimiter = ':')
 	final void testCrossoverWithStandardOptionsOnCRAMetaModel(String resourceOne, String resourceTwo) {
 		
 		String resourcePath = "test/resources/";
-		String expectedCrossoversPath = "test/expectedCrossovers/";
 		
 		SimpleCrossover sc = new SimpleCrossover(resourcePath);
-		ExecutorService es = Executors.newSingleThreadExecutor();
 		
 		sc.defineMetamodel(
 				"CRA", 
@@ -1397,52 +1376,225 @@ class CrossoverTest extends TestResources {
 				)
 		);
 		
+		// get meta-model elements
+		
+		Resource cra = sc.getLoadedResource("CRA");
+		
+		EClass attributeEClass = null;
+		EClass classModelEClass = null;
+		EReference classesEReference = null;
+		
+		Iterator<EObject> iterator = cra.getAllContents();
+		while (iterator.hasNext()) {
+			EObject eObject = (EObject) iterator.next();
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				if(eClass.getName().equals("Attribute")) {
+					attributeEClass = eClass;
+				} else if (eClass.getName().equals("ClassModel")) {
+					classModelEClass = eClass;
+				}
+			}
+			
+		}
+		
+		for (EReference eReference : classModelEClass.getEAllReferences()) {
+			if (eReference.getName().equals("classes")) {
+				classesEReference = eReference;
+			}
+		}
+		
+		final EClass finalAttributeEClass = attributeEClass;
+		final EReference finalClassesEReference = classesEReference;
+		
+		
+		Strategy pps = (View view) -> {
+			view.reduce(finalAttributeEClass);
+		};
+		
+		SearchSpaceElementSplitStrategy sss = new SearchSpaceElementSplitStrategy() {
+			@Override
+			public void apply(View sseOne) throws ViewSetOperationException, IllegalStateException {
+				
+				View changedSSEOne = sseOne.copy();
+				
+				changedSSEOne.reduce(finalClassesEReference);
+				
+				Crossover.DEFAULT_STRATEGY.setProblemSplitPart(super.problemSplitPart);
+				Crossover.DEFAULT_STRATEGY.apply(changedSSEOne);
+				
+				sseOne.clear();
+				sseOne.union(changedSSEOne);
+				sseOne.extend(finalClassesEReference);
+				sseOne.removeDangling();
+				
+			}
+		};
+		
 		try {
-			sc.addCrossover(resourceOne, resourceTwo, SimpleCrossover.createNonRandomProblemSplitStrategy(0.5));
+			sc.addCrossover(resourceOne, resourceTwo, pps, sss);
 		} catch (CrossoverUsageException | ViewSetOperationException e) {
 			e.printStackTrace();
 		}
-		
-		HenshinResourceSet resourceSet = new HenshinResourceSet(expectedCrossoversPath);
 		
 		sc.setWhenDone((pairOfResources, identifierPair) -> {
 			
 			String name = identifierPair.getFirst();
 			int crossoverNumber = identifierPair.getSecond();
 			
-			View firstView = new View(pairOfResources.getFirst());
-			firstView.extendByAllNodes();
-			firstView.extendByMissingEdges();
+			Resource expectedFirst = sc.getLoadedResource("Expected" + name + "No" + crossoverNumber + "First");
+			Resource expectedSecond = sc.getLoadedResource("Expected" + name + "No" + crossoverNumber + "Second");
 			
-			View secondView = new View(pairOfResources.getSecond());
-			secondView.extendByAllNodes();
-			secondView.extendByMissingEdges();
+			assertExistsOnlyOneBijection(expectedFirst, pairOfResources.getFirst());
+			assertExistsOnlyOneBijection(expectedSecond, pairOfResources.getSecond());
 			
-			Resource expectedFirst = resourceSet.getResource(name + "No" + crossoverNumber + "First.xmi");
-			Resource expectedSecond = resourceSet.getResource(name + "No" + crossoverNumber + "Second.xmi");
+		});
+		
+		sc.run();
+		
+	}
+	
+	@Test
+	final void testCrossoverOnCRAModelWithSpecializedOptions() {
+		
+		String resourcePath = "test/resources/";
+		
+		SimpleCrossover sc = new SimpleCrossover(resourcePath);
+		
+		sc.defineMetamodel(
+				"CRA", 
+				List.of("CRA_Pres_One", "CRA_Pres_Two"), 
+				List.of(
+						Pair.of("ClassModel", List.of("features")),
+						Pair.of("Feature", List.of()),
+						Pair.of("Attribute", List.of()), 
+						Pair.of("Method", List.of("dataDependency", "functionalDependency"))
+				)
+		);
+		
+		// get meta-model elements
+		
+		Resource cra = sc.getLoadedResource("CRA");
+		
+		EClass namedElementEClass = null;
+		EAttribute name = null;
+		EClass classModelEClass = null;
+		EReference classesEReference = null;
+		
+		Iterator<EObject> iterator = cra.getAllContents();
+		while (iterator.hasNext()) {
+			EObject eObject = (EObject) iterator.next();
+			if(eObject instanceof EClass) {
+				EClass eClass = (EClass) eObject;
+				if(eClass.getName().equals("NamedElement")) {
+					namedElementEClass = eClass;
+				} else if (eClass.getName().equals("ClassModel")) {
+					classModelEClass = eClass;
+				}
+			}	
+		}
+		
+		for (EAttribute eAttribute : namedElementEClass.getEAttributes()) {
+			if (eAttribute.getName().equals("name")) {
+				name = eAttribute;
+			}
+		}
+		
+		
+		for (EReference eReference : classModelEClass.getEAllReferences()) {
+			if (eReference.getName().equals("classes")) {
+				classesEReference = eReference;
+			}
+		}
+		
+		final EAttribute finalName = name;
+		
+		Strategy pps = (View view) -> {
 			
-			assertExistsOnlyOneBijection(expectedFirst, firstView);
-			assertExistsOnlyOneBijection(expectedSecond, secondView);
+			List<EObject> toRemove = new ArrayList<>();
+			
+			for (EObject eObject : view.getContainedEObjects()) {
+				
+				String nameString = (String) eObject.eGet(finalName);
+				
+				switch (nameString) {
+					case "4":
+					case "6":
+						toRemove.add(eObject);
+						break;
+	
+					default:
+						break;
+				}
+				
+			}
+			
+			toRemove.forEach(view::reduce);
+
+		};
+		
+		final EReference finalClassesEReference = classesEReference;
+		
+		SearchSpaceElementSplitStrategy sss = new SearchSpaceElementSplitStrategy() {
+			@Override
+			public void apply(View sseOne) throws ViewSetOperationException, IllegalStateException {
+				
+				View changedSSEOne = sseOne.copy();
+				
+				changedSSEOne.reduce(finalClassesEReference);
+				
+				Crossover.DEFAULT_STRATEGY.setProblemSplitPart(super.problemSplitPart);
+				Crossover.DEFAULT_STRATEGY.apply(changedSSEOne);
+				
+				sseOne.clear();
+				sseOne.union(changedSSEOne);
+				sseOne.extend(finalClassesEReference);
+				sseOne.removeDangling();
+				
+			}
+		};
+		
+		try {
+			sc.addCrossover("CRA_Pres_One", "CRA_Pres_Two", pps, sss);
+		} catch (CrossoverUsageException | ViewSetOperationException e) {
+			e.printStackTrace();
+		}
+	
+		sc.setWhenDone((pairOfResources, identifierPair) -> {
+			
+			String crossoverName = identifierPair.getFirst();
+			int crossoverNumber = identifierPair.getSecond();
+			
+			Resource expectedFirst = sc.getLoadedResource("Expected" + crossoverName + "No" + crossoverNumber + "First");
+			Resource expectedSecond = sc.getLoadedResource("Expected" + crossoverName + "No" + crossoverNumber + "Second");
+			
+			assertExistsMultipleBijections(expectedFirst, pairOfResources.getFirst(), 2);
+			assertExistsMultipleBijections(expectedSecond, pairOfResources.getSecond(), 2);
 			
 			
 		});
 		
-		es.execute(sc);
+		sc.run();
 		
 	}
 	
 	/**
-	 * Use the {@link Engine} to find a bijective {@link Match} between the 
-	 * {@link Resource expected} model and the {@link View actual} model.
+	 * Use the {@link Engine} to find all bijective {@link Match Matches} between the 
+	 * {@link Resource expected} model and the {@link Resource actual} model.
 	 * @param expected a {@link Resource} containing the expected crossover part
-	 * @param actual a complete {@link View} over the actual crossover part
+	 * @param actual a {@link Resource} containing the actual crossover part
+	 * @param expectedMatchCount how many bijections should be found
 	 */
-	private Match assertExistsOnlyOneBijection (Resource expected, View actual) {
+	private List<Match> assertExistsMultipleBijections (Resource expected, Resource actual, int expectedMatchCount) {
+		
+		View actualView = new View(actual);
+		actualView.extendByAllNodes();
+		actualView.extendByMissingEdges();
 		
 		// find an isomorphism from actual to expected
 		Rule rule = new RuleImpl();
-		rule.setLhs(actual.getGraph());
-		rule.setInjectiveMatching(true);
+		rule.setLhs(actualView.getGraph());
+		rule.setInjectiveMatching(false);
 		EGraph eGraph = new EGraphImpl(expected.getContents());
 		
 		Engine engine = new EngineImpl();
@@ -1450,12 +1602,30 @@ class CrossoverTest extends TestResources {
 		Iterator<Match> matchIterator = engine.findMatches(rule, eGraph, null).iterator();
 		
 		assertTrue(matchIterator.hasNext());
-		Match match = matchIterator.next();
-		assertFalse(matchIterator.hasNext());
-		assertEquals(eGraph.size(), match.getNodeTargets().size());
 		
-		return match;
+		List<Match> matches = new ArrayList<>();
 		
+		while (matchIterator.hasNext()) {
+			Match match = (Match) matchIterator.next();
+			Set<EObject> targetNodeEObjects = new HashSet<>(match.getNodeTargets());
+			if(eGraph.size() != targetNodeEObjects.size()) continue;
+			matches.add(match);
+		}
+		
+		assertEquals(expectedMatchCount, matches.size());
+		
+		return matches;
+		
+	}
+	
+	/**
+	 * Use the {@link Engine} to find a bijective {@link Match} between the 
+	 * {@link Resource expected} model and the {@link Resource actual} model.
+	 * @param expected a {@link Resource} containing the expected crossover part
+	 * @param actual a {@link Resource} containing the actual crossover part
+	 */
+	private Match assertExistsOnlyOneBijection (Resource expected, Resource actual) {
+		return assertExistsMultipleBijections(expected, actual, 1).get(0);
 	}
 	
 	/**
